@@ -1,0 +1,832 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>YarnStash</title>
+    <link rel="icon" type="image/png" href="fevicon.png">
+    <link rel="apple-touch-icon" href="fevicon.png">
+    <meta name="description" content="yarnstash my craft companion">
+    <meta property="og:title" content="yarnstash">
+    <meta property="og:description" content="yarnstash my craft companion">
+    <meta property="og:type" content="website">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            --bg-midnight: #F6C9B4;
+            --bg-plum: #F3B9DF;
+            --primary-accent: #6AD8FB;
+            --secondary-accent: #EA85C7;
+            --tertiary-accent: #EA85C7;
+            --vibrant-pink: #6AD8FB;
+            --glass-bg: rgba(255, 255, 255, 0.4);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --text-main: #333333;
+            --text-muted: #555555;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-midnight);
+            background-image: radial-gradient(circle at 50% 50%, var(--bg-plum) 0%, var(--bg-midnight) 100%);
+            color: var(--text-main);
+            min-height: 100vh;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-radius: 20px;
+        }
+
+        .btn-primary {
+            background-color: var(--tertiary-accent);
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(108, 92, 231, 0.3);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--vibrant-pink);
+            transform: translateY(-2px);
+        }
+
+        .nav-item {
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            color: var(--vibrant-pink);
+            text-shadow: 0 0 8px rgba(234, 133, 199, 0.4);
+        }
+
+        .yarn-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .yarn-card:hover {
+            transform: scale(1.02);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+
+        .weight-badge {
+            background: var(--tertiary-accent);
+            box-shadow: 0 0 10px var(--tertiary-accent);
+        }
+
+        input, select {
+            background: rgba(255, 255, 255, 0.5) !important;
+            border: 1px solid var(--glass-border) !important;
+            color: var(--text-main) !important;
+        }
+
+        input:focus {
+            border-color: var(--primary-accent) !important;
+            outline: none;
+        }
+
+        /* Hide Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-midnight);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--tertiary-accent);
+            border-radius: 10px;
+        }
+
+        .hidden-section {
+            display: none !important;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 0.4s ease forwards;
+        }
+    </style>
+    <!-- Authentication View -->
+    <div id="auth-section" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#F6C9B4]">
+    <div class="glass w-full max-w-md p-8 animate-fade text-center">
+        <div class="mb-8">
+            <img src="fevicon.png" class="w-24 h-24 mx-auto mb-4 rounded-full object-cover shadow-md">
+            <h2 id="auth-title" class="text-3xl font-bold text-[#EA85C7] mb-2">Welcome Back</h2>
+            <p id="auth-subtitle" class="text-[#555555]">Login to your yarn stash</p>
+        </div>
+
+        <div class="space-y-4 text-left">
+            <div>
+                <label class="block text-sm font-medium mb-1 text-[#555555]">Username</label>
+                <input type="text" id="auth-username" class="w-full p-3 rounded-lg border-none" placeholder="Enter username...">
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1 text-[#555555]">Password</label>
+                <input type="password" id="auth-password" class="w-full p-3 rounded-lg border-none" placeholder="••••••••">
+            </div>
+            
+            <p id="auth-error" class="hidden text-red-500 text-xs mb-2 text-center font-semibold"></p>
+
+            <button id="auth-main-btn" onclick="handleLogin()" class="btn-primary w-full py-3 rounded-lg font-semibold mt-4 shadow-lg active:scale-95 transition-transform">
+                Login
+            </button>
+
+            <p class="text-xs text-center text-[#555555] mt-4">
+                <span id="toggle-text">Don't have an account?</span> 
+                <a href="javascript:void(0)" onclick="toggleAuthMode()" id="toggle-link" class="text-[#EA85C7] font-bold hover:underline">Sign Up</a>
+            </p>
+        </div>
+    </div>
+</div>
+
+</div>
+
+    <!-- Main Application UI -->
+    <div id="app-main" class="hidden-section">
+        <!-- Header -->
+        <header class="glass sticky top-0 z-50 px-6 py-4 mx-4 mt-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="fevicon.png" alt="Logo" class="w-8 h-8 rounded-full border border-[#EA85C7]/30 object-cover">
+                <div>
+                    <h1 class="text-xl font-bold text-[#EA85C7]">YarnStash</h1>
+                    <p id="user-display" class="text-xs text-[#555555]"></p>
+                </div>
+            </div>
+            <button onclick="handleLogout()" class="text-gray-400 hover:text-white transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0,0,24,24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17,16l4-4m0,0l-4-4m4,4H7m6,4v1a3,3,0,0,1-3,3H6a3,3,0,0,1-3-3V7a3,3,0,0,1,3-3h4a3,3,0,0,1,3,3v1" />
+                </svg>
+            </button>
+        </header>
+
+        <main class="max-w-4xl mx-auto px-4 mt-6">
+            <!-- Stash Tab -->
+            <section id="tab-stash" class="tab-content animate-fade">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold">My Collection</h2>
+                    <div class="flex gap-2">
+                        <span class="text-xs text-gray-400 self-center" id="stash-count">0 items</span>
+                    </div>
+                </div>
+                
+                <div id="yarn-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Cards injected here -->
+                </div>
+
+                <!-- Empty State -->
+                <div id="empty-state" class="hidden-section text-center py-20 glass rounded-3xl mt-10">
+                    <div class="text-6xl mb-4">🧶</div>
+                    <h3 class="text-xl font-medium mb-2">No yarn found</h3>
+                    <p class="text-gray-400">Head to the Log tab to add your first skein!</p>
+                </div>
+            </section>
+
+            <!-- Log Tab -->
+            <section id="tab-log" class="tab-content hidden-section animate-fade">
+                <div class="glass p-6 rounded-3xl max-w-lg mx-auto">
+                    <h2 class="text-2xl font-semibold mb-6">Quick Log</h2>
+                    <form id="log-form" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Brand / Name</label>
+                            <input type="text" id="yarn-brand" placeholder="e.g. Malabrigo Rios" class="w-full p-3 rounded-xl" required>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Color</label>
+                                <input type="text" id="yarn-color" placeholder="e.g. Teal" class="w-full p-3 rounded-xl" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium mb-2">Yardage</label>
+                                <input type="number" id="yarn-yardage" placeholder="210" class="w-full p-3 rounded-xl" required>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2 flex justify-between">
+                                <span>Yarn Weight</span>
+                                <span id="weight-val" class="text-[#FEF9FB]">Medium (4)</span>
+                            </label>
+                            <input type="range" id="yarn-weight" min="0" max="7" value="4" class="w-full accent-[#FEF9FB]">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Recommended Hook</label>
+                            <select id="yarn-hook" class="w-full p-3 rounded-xl">
+                                <option value="2.25mm">2.25mm (B-1)</option>
+                                <option value="3.25mm">3.25mm (D-3)</option>
+                                <option value="3.5mm">3.5mm (E-4)</option>
+                                <option value="4.0mm">4.0mm (G-6)</option>
+                                <option value="5.0mm" selected>5.0mm (H-8)</option>
+                                <option value="6.0mm">6.0mm (J-10)</option>
+                                <option value="8.0mm">8.0mm (L-11)</option>
+                                <option value="10.0mm">10.0mm (N/P-15)</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn-primary w-full py-4 rounded-xl font-bold text-lg">Add to Stash</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Match Tab -->
+            <section id="tab-match" class="tab-content hidden-section animate-fade">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-semibold mb-2">Matchmaker</h2>
+                    <p class="text-gray-400">Find the perfect project for your yarn.</p>
+                </div>
+
+                <div id="match-selector" class="glass p-6 rounded-3xl mb-8">
+                    <label class="block text-sm font-medium mb-3">Select Yarn to Match</label>
+                    <select id="match-yarn-dropdown" class="w-full p-3 rounded-xl mb-4" onchange="filterProjects()">
+                        <option value="">-- Choose from Stash --</option>
+                    </select>
+                </div>
+
+                <div id="project-results" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Project cards injected here -->
+                </div>
+                
+                <div id="no-matches" class="hidden-section text-center py-10 glass rounded-3xl">
+                    <p class="text-gray-400">Select a compatible yarn to see projects.</p>
+                </div>
+            </section>
+        </main>
+
+        <!-- Pattern Modal -->
+        <div id="pattern-modal" class="fixed inset-0 z-[100] hidden-section flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closeModal()"></div>
+            <div class="glass w-full max-w-2xl max-h-[80vh] overflow-y-auto p-8 relative z-10 animate-fade">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 id="modal-title" class="text-2xl font-bold text-[#FEF9FB]"></h2>
+                        <p id="modal-stats" class="text-sm text-gray-400 mt-1"></p>
+                    </div>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-white">&times;</button>
+                </div>
+                <div id="modal-content" class="space-y-4 text-sm leading-relaxed text-gray-200">
+                    <!-- Recipe injected here -->
+                </div>
+                <div class="mt-8 pt-6 border-t border-white/10 flex justify-end gap-4">
+                    <button onclick="closeModal()" class="px-6 py-2 rounded-lg bg-gray-700 text-white">Browse More</button>
+                    <button id="confirm-project-btn" class="px-6 py-2 rounded-lg btn-primary">Confirm & Use Yarn</button>
+                    <button id="delete-project-btn" class="px-6 py-2 rounded-lg bg-red-500 text-white hidden-section">Delete Project</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Toast -->
+        <div id="toast" class="fixed bottom-24 left-1/2 -translate-x-1/2 glass px-6 py-3 rounded-full text-white font-medium transform translate-y-20 transition-transform duration-300 z-[60]">
+            ✨ Yarn successfully logged!
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="fixed bottom-0 left-0 right-0 glass m-4 mb-6 rounded-3xl flex justify-around items-center h-20 z-50">
+            <button onclick="switchTab(`stash`)" class="nav-item flex flex-col items-center gap-1 active" id="nav-stash">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0,0,24,24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19,11H5m14,0a2,2,0,0,1,2,2v6a2,2,0,0,1-2,2H5a2,2,0,0,1-2-2V13a2,2,0,0,1,2-2m14,0V9a2,2,0,0,0-2-2M5,11V9a2,2,0,0,1,2-2m0,0V5a2,2,0,0,1,2-2h6a2,2,0,0,1,2,2v2M7,7h10" />
+                </svg>
+                <span class="text-[10px] font-medium">STASH</span>
+            </button>
+            <button onclick="switchTab(`log`)" class="nav-item flex flex-col items-center gap-1" id="nav-log">
+                <div class="w-12 h-12 rounded-full bg-[#A03A81] flex items-center justify-center -mt-8 shadow-lg shadow-[#A03A81]/40 text-white">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0,0,24,24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12,4v16m8-8H4" />
+                    </svg>
+                </div>
+                <span class="text-[10px] font-medium">LOG</span>
+            </button>
+            <button onclick="switchTab(`match`)" class="nav-item flex flex-col items-center gap-1" id="nav-match">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0,0,24,24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318,6.318a4.5,4.5,0,0,0,0,6.364L12,20.364l7.682-7.682a4.5,4.5,0,0,0-6.364-6.364L12,7.636l-1.318-1.318a4.5,4.5,0,0,0-6.364,0z" />
+                </svg>
+                <span class="text-[10px] font-medium">MATCH</span>
+            </button>
+        </nav>
+
+        <!-- Branding in footer -->
+        <footer class="mt-12 mb-20 flex justify-center">
+            <a href="https://kuse.ai" target="_blank" class="kuse-branding">
+                <span>made with</span>
+                <svg style="height: 1.2em" viewBox="0,0,160,44" xmlns="http://www.w3.org/2000/svg"><path d="m.01,20.65C-.43,8.25,9.3-2.03,22.04.34,34.78,2.72,43.29,8.32,43.29,22.9s-8.66,19.01-22.03,20.3C7.9,44.5.46,33.05.01,20.65z" fill="currentColor"/><path fill-rule="evenodd" clip-rule="evenodd" d="m146.76,7.94c8.07,0,13.24,6.15,13.24,14.58v1.39h-20.75c.45,4.05,3.51,7.37,8.57,7.37,2.62,0,5.73-1.05,7.62-2.94l2.67,3.83c-2.67,2.55-6.62,3.88-10.9,3.88-8.07,0-14.08-5.6-14.08-14.08,0-7.76,5.67-14.02,13.63-14.02zm0,4.77c-5.01,0-7.29,3.83-7.57,7.1h15.13c-.11-3.16-2.28-7.1-7.57-7.1z" fill="currentColor"/><path d="m86.64,24.49c0,4.15,2.39,6.84,6.84,6.84,4.4,0,6.84-2.69,6.84-6.84V8.55h5.37v16.33c0,6.7-4.06,11.14-12.21,11.14-8.21,0-12.21-4.5-12.21-11.09V8.55h5.37v15.94zm32.99-16.55c4.49,0,8.06,1.47,10.6,3.86l-2.59,3.81c-2.05-2-5.28-3.08-8.06-3.08-2.88,0-4.84,1.37-4.84,3.32,0,1.91,2.64,2.54,5.81,3.27,4.59,1.08,10.26,2.4,10.26,8.46,0,4.94-3.76,8.41-11.14,8.41-4.98,0-8.94-1.76-11.24-4.11l2.54-4.11c1.86,1.91,5.18,3.67,8.84,3.67,3.91,0,5.57-1.66,5.57-3.62,0-2.3-2.88-2.98-6.21-3.76-4.54-1.08-9.87-2.3-9.87-8.06,0-4.5,4.2-8.06,10.31-8.06zM60.79,20.82,71.44,8.55h6.5L66.46,21.26,78.82,35.44h-6.5l-9.28-11.1-2.25,2.49v8.6h-5.33V8.55h5.33v12.27z" fill="currentColor"/></svg>
+            </a>
+        </footer>
+    </div>
+
+    <script>
+    function handleSignUp() {
+    const user = document.getElementById('auth-username').value.trim();
+    const pass = document.getElementById('auth-password').value.trim();
+    
+    // Check if fields are empty
+    if (!user || !pass) {
+        alert("Please enter both a username and password.");
+        return;
+    }
+
+    let userRegistry = JSON.parse(localStorage.getItem('yarnstash_global_registry')) || {};
+
+    if (userRegistry[user]) {
+        alert("Username already exists! Try logging in instead.");
+        return;
+    }
+
+    // Save new user
+    userRegistry[user] = { password: pass };
+    localStorage.setItem('yarnstash_global_registry', JSON.stringify(userRegistry));
+    
+    // Log them in immediately
+    currentUser = user;
+    yarnStash = []; 
+    loginSuccess();
+    alert("Account created successfully!");
+}
+ // --- State Management ---
+        const weightLabels = [
+            `Lace (0)`, `Super Fine (1)`, `Fine (2)`, `Light (3)`, 
+            `Medium (4)`, `Bulky (5)`, `Super Bulky (6)`, `Jumbo (7)`
+        ];
+
+        const recipes = [
+            {
+                id: `beanie`,
+                name: `Simple Slouchy Beanie`,
+                weight: 4,
+                yardage: 200,
+                hook: `5.0mm`,
+                steps: [
+                    `Round 1: Magic ring, 12 DC into ring. Join.`,
+                    `Round 2: 2 DC in each st around. (24 DC)`,
+                    `Round 3: *2 DC in next st, 1 DC in next* repeat around. (36 DC)`,
+                    `Round 4: *2 DC in next st, 1 DC in next 2 sts* repeat around. (48 DC)`,
+                    `Rounds 5-15: DC in each st around.`,
+                    `Rounds 16-18: BPDC and FPDC alternating for ribbing.`
+                ]
+            },
+            {
+                id: `octopus`,
+                name: `Amigurumi Octopus`,
+                weight: 4,
+                yardage: 150,
+                hook: `3.5mm`,
+                steps: [
+                    `Head: Round 1-6: Standard SC increases to 36 sts.`,
+                    `Rounds 7-12: SC around.`,
+                    `Rounds 13-16: Decrease back to 12 sts. Stuff firmly.`,
+                    `Tentacles: Join yarn to bottom. *Chain 30, 3 SC in each chain to curl* repeat 8 times.`
+                ]
+            },
+            {
+                id: `blanket`,
+                name: `Granny Square Blanket`,
+                weight: 4,
+                yardage: 1200,
+                hook: `6.0mm`,
+                steps: [
+                    `Center: Ch 4, join to form ring.`,
+                    `Round 1: (3 DC, ch 2) 4 times into ring.`,
+                    `Round 2: (3 DC, ch 2, 3 DC) in each corner sp.`,
+                    `Continue expanding until desired size. Repeat for 20 squares and join.`
+                ]
+            },
+            {
+                id: `tote`,
+                name: `Crochet Tote Bag`,
+                weight: 4,
+                yardage: 450,
+                hook: `5.0mm`,
+                steps: [
+                    `Base: Chain 31. SC in 2nd ch and across. Rotate and SC on other side.`,
+                    `Body: SC in back loops only for 2 rounds.`,
+                    `Work in Mesh Stitch (DC, ch 1, skip 1) for 25 rounds.`,
+                    `Handles: Chain 60 on each side, SC for 4 rounds.`
+                ]
+            },
+            {
+                id: `oversized-sweater`,
+                name: `Cloud-Soft Oversized Sweater`,
+                weight: 5,
+                yardage: 1200,
+                hook: `6.5mm`,
+                steps: [
+                    `Back Panel: Ch 65. HDC for 50 rows.`,
+                    `Front Panel: Ch 65. HDC for 45 rows, then shape neckline.`,
+                    `Sleeves: Ch 30. Inc every 4 rows until 50 sts. Work until 18 inches.`,
+                    `Assembly: Sl st panels together. Add ribbing to neck and cuffs.`
+                ]
+            },
+            {
+                id: `designer-clutch`,
+                name: `Luxury Chevron Clutch`,
+                weight: 3,
+                yardage: 300,
+                hook: `3.5mm`,
+                steps: [
+                    `Flap: Ch 41. Work in Chevron pattern (2 SC in first, 8 SC, skip 2, 8 SC, 3 SC in next).`,
+                    `Body: Work 30 rows of Chevron pattern.`,
+                    `Sides: SC 2 rectangles 4x10 inches.`,
+                    `Finish: Sew sides, add magnetic clasp and lining.`
+                ]
+            },
+            {
+                id: `amigurumi-dino`,
+                name: `Brachiosaurus Plushie`,
+                weight: 4,
+                yardage: 250,
+                hook: `3.25mm`,
+                steps: [
+                    `Body: R1-10: Inc to 48 SC. R11-20: SC around. R21-30: Dec to 12.`,
+                    `Neck: Long tube of 15 SC for 25 rows.`,
+                    `Legs: Make 4 small cylinders.`,
+                    `Tail: Conical shape decreasing from 18 to 6 SC.`
+                ]
+            }
+        ];
+
+        // --- Auth Logic ---
+// --- Updated State Management ---
+let currentUser = null;
+let yarnStash = [];
+
+let isSignUpMode = false; // Tracks which page the user is looking at
+
+function toggleAuthMode() {
+    isSignUpMode = !isSignUpMode;
+    
+    const title = document.getElementById('auth-title');
+    const subtitle = document.getElementById('auth-subtitle');
+    const btn = document.getElementById('auth-main-btn');
+    const toggleText = document.getElementById('toggle-text');
+    const toggleLink = document.getElementById('toggle-link');
+
+    if (isSignUpMode) {
+        // Switch UI to "Sign Up"
+        title.innerText = "Create Account";
+        subtitle.innerText = "Join the community";
+        btn.innerText = "Sign Up";
+        btn.onclick = handleSignUp; // Points button to Sign Up logic
+        
+        // Change footer to offer "Login"
+        toggleText.innerText = "Already have an account?";
+        toggleLink.innerText = "Login";
+    } else {
+        // Switch UI back to "Login"
+        title.innerText = "Welcome Back";
+        subtitle.innerText = "Login to your yarn stash";
+        btn.innerText = "Login";
+        btn.onclick = handleLogin; // Points button back to Login logic
+        
+        // Change footer to offer "Sign Up"
+        toggleText.innerText = "Don't have an account?";
+        toggleLink.innerText = "Sign Up";
+    }
+}
+function handleSignUp() {
+    const user = document.getElementById('auth-username').value.trim();
+    const pass = document.getElementById('auth-password').value.trim();
+    let userRegistry = JSON.parse(localStorage.getItem('yarnstash_global_registry')) || {};
+
+    if (!user || pass.length < 4) {
+        alert("Please enter a username and a password (at least 4 characters).");
+        return;
+    }
+
+    if (userRegistry[user]) {
+        alert("This username already exists. Please choose another or login.");
+        return;
+    }
+
+    // Create the new account
+    userRegistry[user] = { 
+        password: pass,
+        created: new Date().toISOString()
+    };
+    localStorage.setItem('yarnstash_global_registry', JSON.stringify(userRegistry));
+    
+    currentUser = user;
+    yarnStash = []; // Start with a fresh stash
+    saveData();
+    loginSuccess();
+}
+
+function handleLogin() {
+    const user = document.getElementById('auth-username').value.trim();
+    const pass = document.getElementById('auth-password').value.trim();
+    
+    // 1. Get the list of registered users
+    let userRegistry = JSON.parse(localStorage.getItem('yarnstash_global_registry')) || {};
+
+    // 2. CHECK: Does this username even exist?
+    if (!userRegistry[user]) {
+        alert("No account found with that username. Please sign up first!");
+        return; // Stops the function here
+    }
+
+    // 3. CHECK: Is the password correct?
+    if (userRegistry[user].password !== pass) {
+        alert("Incorrect password. Please try again.");
+        return; // Stops the function here
+    }
+
+    // 4. Success! Let them in
+    currentUser = user;
+    loadData();
+    loginSuccess();
+}
+function showError(message) {
+    const errorEl = document.getElementById('auth-error');
+    errorEl.innerText = message;
+    errorEl.classList.remove('hidden');
+    
+    // Hide it again after 3 seconds
+    setTimeout(() => { errorEl.classList.add('hidden'); }, 3000);
+}
+
+// Inside handleLogin, instead of alert(), use:
+// showError("No account found with that username.");
+//----Authorization and Login ----//
+function loginSuccess() {
+    // Save "session" so they stay logged in on refresh
+    localStorage.setItem('yarnstash_current_session', currentUser);
+    
+    document.getElementById('auth-section').classList.add('hidden-section');
+    document.getElementById('app-main').classList.remove('hidden-section');
+    document.getElementById('user-display').innerText = `Artist: ${currentUser}`;
+    renderStash();
+}
+
+function handleLogout() {
+    saveData();
+    localStorage.removeItem('yarnstash_current_session'); // Clear session
+    currentUser = null;
+    yarnStash = [];
+    document.getElementById('auth-section').classList.remove('hidden-section');
+    document.getElementById('app-main').classList.add('hidden-section');
+    document.getElementById('auth-username').value = '';
+    document.getElementById('auth-password').value = '';
+}
+
+function saveData() {
+    if (currentUser) {
+        localStorage.setItem(`yarnStash_${currentUser}`, JSON.stringify(yarnStash));
+    }
+}
+
+function loadData() {
+    const stored = localStorage.getItem(`yarnStash_${currentUser}`);
+    yarnStash = stored ? JSON.parse(stored) : [];
+}
+        // --- Core Functions ---
+        function renderStash() {
+            const grid = document.getElementById(`yarn-grid`);
+            const empty = document.getElementById(`empty-state`);
+            const count = document.getElementById(`stash-count`);
+            
+            grid.innerHTML = ``;
+            count.innerText = `${yarnStash.length} item${yarnStash.length !== 1 ? `s` : ``}`;
+
+            if (yarnStash.length === 0) {
+                empty.classList.remove(`hidden-section`);
+                return;
+            }
+            empty.classList.add(`hidden-section`);
+
+            yarnStash.forEach((yarn, index) => {
+                const card = document.createElement(`div`);
+                card.className = `glass p-6 yarn-card relative overflow-hidden animate-fade`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="w-10 h-10 rounded-full weight-badge flex items-center justify-center font-bold text-lg">
+                            ${yarn.weight}
+                        </div>
+                        <button onclick="deleteYarn(${index})" class="text-gray-500 hover:text-red-400 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0,0,24,24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19,7l-.867,12.142A2,2,0,0,1,16.138,21H7.862a2,2,0,0,1-1.995-1.858L5,7m5,4v6m4-6v6m1-10V4a1,1,0,0,0-1-1h-4a1,1,0,0,0-1,1v3M4,7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                    <h3 class="text-xl font-bold mb-1">${yarn.brand}</h3>
+                    <p class="text-sm text-gray-400 mb-4">${yarn.color} • ${yarn.yardage} yds</p>
+                    
+                    <div class="flex justify-between items-center mt-6">
+                        <button onclick="toggleStatus(${index})" class="text-xs font-semibold px-3 py-1 rounded-full border ${yarn.status === `Available` ? `border-green-400 text-green-400` : `border-yellow-400 text-yellow-400`}">
+                            ${yarn.status}
+                        </button>
+                        <button onclick="findMatchForYarn(${index})" class="text-xs text-[#EA85C7] underline decoration-[#EA85C7]/30 underline-offset-4">Find Match</button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+            updateMatchDropdown();
+        }
+
+        function deleteYarn(index) {
+            if (confirm(`Are you sure you want to remove this yarn?`)) {
+                yarnStash.splice(index, 1);
+                saveData();
+                renderStash();
+            }
+        }
+
+        function toggleStatus(index) {
+            yarnStash[index].status = yarnStash[index].status === `Available` ? `In Use` : `Available`;
+            saveData();
+            renderStash();
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll(`.tab-content`).forEach(el => el.classList.add(`hidden-section`));
+            document.querySelectorAll(`.nav-item`).forEach(el => el.classList.remove(`active`));
+            
+            document.getElementById(`tab-${tabId}`).classList.remove(`hidden-section`);
+            document.getElementById(`nav-${tabId}`).classList.add(`active`);
+        }
+
+        // --- Log Form ---
+        document.getElementById(`yarn-weight`).addEventListener(`input`, (e) => {
+            document.getElementById(`weight-val`).innerText = weightLabels[e.target.value];
+        });
+
+        document.getElementById(`log-form`).addEventListener(`submit`, (e) => {
+            e.preventDefault();
+            const newYarn = {
+                brand: document.getElementById(`yarn-brand`).value,
+                color: document.getElementById(`yarn-color`).value,
+                yardage: parseInt(document.getElementById(`yarn-yardage`).value),
+                weight: parseInt(document.getElementById(`yarn-weight`).value),
+                hook: document.getElementById(`yarn-hook`).value,
+                status: `Available`
+            };
+
+            yarnStash.push(newYarn);
+            saveData();
+            
+            // UI Feedback
+            const toast = document.getElementById(`toast`);
+            toast.style.transform = `translateY(0)`;
+            setTimeout(() => {
+                toast.style.transform = `translateY(5rem)`;
+                document.getElementById(`log-form`).reset();
+                switchTab(`stash`);
+                renderStash();
+            }, 1200);
+        });
+
+        // --- Matchmaker Logic ---
+        function updateMatchDropdown() {
+            const dropdown = document.getElementById(`match-yarn-dropdown`);
+            dropdown.innerHTML = `<option value="">-- Choose from Stash --</option>`;
+            yarnStash.forEach((yarn, idx) => {
+                if (yarn.status === `Available`) {
+                    const opt = document.createElement(`option`);
+                    opt.value = idx;
+                    opt.innerText = `${yarn.brand} (${yarn.color}) - ${yarn.yardage}yds`;
+                    dropdown.appendChild(opt);
+                }
+            });
+        }
+
+        function findMatchForYarn(idx) {
+            switchTab(`match`);
+            document.getElementById(`match-yarn-dropdown`).value = idx;
+            filterProjects();
+        }
+
+        function filterProjects() {
+            const idx = document.getElementById(`match-yarn-dropdown`).value;
+            const results = document.getElementById(`project-results`);
+            const noMatches = document.getElementById(`no-matches`);
+            
+            results.innerHTML = ``;
+            
+            if (idx === ``) {
+                noMatches.classList.remove(`hidden-section`);
+                return;
+            }
+
+            const yarn = yarnStash[idx];
+            const compatible = recipes.filter(r => r.weight === yarn.weight && r.yardage <= yarn.yardage);
+
+            if (compatible.length === 0) {
+                results.innerHTML = `<div class="col-span-full text-center py-10 glass">No patterns match this yardage/weight yet. Try a different yarn!</div>`;
+                noMatches.classList.add(`hidden-section`);
+                return;
+            }
+
+            noMatches.classList.add(`hidden-section`);
+            compatible.forEach(proj => {
+                const card = document.createElement(`div`);
+                card.className = `glass p-6 animate-fade flex flex-col`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-lg">${proj.name}</h3>
+                        <span class="text-xs bg-white/10 px-2 py-1 rounded">${proj.hook} Hook</span>
+                    </div>
+                    <div class="text-sm text-gray-400 mb-6 space-y-1">
+                        <p>Requires: ${proj.yardage} yds</p>
+                        <p>Available: <span class="text-green-400">${yarn.yardage} yds</span></p>
+                    </div>
+                    <button onclick="viewPattern('${proj.id}', ${idx})" class="mt-auto btn-primary py-2 rounded-lg text-sm font-semibold">Start Project</button>
+                `;
+                results.appendChild(card);
+            });
+        }
+
+        // --- Pattern Modal ---
+        let currentProjectYarnIdx = null;
+
+        function viewPattern(projId, yarnIdx) {
+            const proj = recipes.find(r => r.id === projId);
+            currentProjectYarnIdx = yarnIdx;
+            
+            document.getElementById(`modal-title`).innerText = proj.name;
+            document.getElementById(`modal-stats`).innerText = `Weight ${proj.weight} • ${proj.yardage} yds required • ${proj.hook} hook`;
+            
+            const content = document.getElementById(`modal-content`);
+            content.innerHTML = `<ol class="list-decimal pl-5 space-y-3">
+                ${proj.steps.map(s => `<li>${s}</li>`).join(``)}
+            </ol>`;
+            
+            document.getElementById(`pattern-modal`).classList.remove(`hidden-section`);
+
+            const deleteBtn = document.getElementById(`delete-project-btn`);
+            const confirmBtn = document.getElementById(`confirm-project-btn`);
+            const yarn = yarnStash[yarnIdx];
+
+            if (yarn.status === `In Use`) {
+                deleteBtn.classList.remove(`hidden-section`);
+                confirmBtn.classList.add(`hidden-section`);
+            } else {
+                deleteBtn.classList.add(`hidden-section`);
+                confirmBtn.classList.remove(`hidden-section`);
+            }
+            
+            deleteBtn.onclick = () => {
+                if (confirm(`Are you sure you want to delete this project and return the yarn to Available?`)) {
+                    yarnStash[currentProjectYarnIdx].status = `Available`;
+                    saveData();
+                    closeModal();
+                    renderStash();
+                }
+            };
+            
+            confirmBtn.onclick = () => {
+                yarnStash[currentProjectYarnIdx].status = `In Use`;
+                saveData();
+                closeModal();
+                renderStash();
+                switchTab(`stash`);
+            };
+        }
+
+        function closeModal() {
+            document.getElementById(`pattern-modal`).classList.add(`hidden-section`);
+        }
+
+        // Initialize session check
+        window.onload = () => {
+            // If we wanted to persistent session without re-login:
+            // if(currentUser) { ... } 
+            // For now, always require login on refresh for simplicity.
+        };
+    </script>
+
+<script>
+  (() => {
+    const root = document.querySelector('[data-kuse-report-entry]');
+    if (!root) return;
+    const storageKey = root.getAttribute('data-kuse-report-entry-key');
+    const dismiss = () => {
+      root.remove();
+      if (storageKey) {
+        try {
+          window.localStorage.setItem(storageKey, '1');
+        } catch {}
+      }
+    };
+    if (storageKey) {
+      try {
+        if (window.localStorage.getItem(storageKey) === '1') {
+          root.remove();
+          return;
+        }
+      } catch {}
+    }
+    const closeButton = root.querySelector('[data-kuse-report-entry-close]');
+    if (closeButton) {
+      closeButton.addEventListener('click', dismiss);
+    }
+  })();
+</script></body>
+</html>
