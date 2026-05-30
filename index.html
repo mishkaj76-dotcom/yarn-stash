@@ -359,20 +359,27 @@
             }
         }
         function handleLogin() {
-            const user = document.getElementById('auth-username').value.trim();
+            const email = document.getElementById('auth-username').value.trim();
             const pass = document.getElementById('auth-password').value.trim();
-            const registry = JSON.parse(localStorage.getItem('yarnstash_registry')) || {};
 
-            if (!registry[user] || registry[user].password !== pass) {
-                return alert("Invalid Artist Name or Password.");
+            if (!email || !pass) {
+                return alert("Please enter email and password");
             }
 
-            if (!registry[user].verified) {
-                return alert("Your account is not verified yet. Check your email for the verification code.");
-            }
-
-            currentUser = user;
-            loginSuccess();
+            fetch('http://localhost:5000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: email, password: pass })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.error) {
+                    return alert(data.error);
+                }
+                currentUser = data.username;
+                loginSuccess();
+            })
+            .catch(err => alert('Connection error: ' + err.message));
         }
 
        function handleSignUp() {
@@ -380,108 +387,80 @@
     const pass = document.getElementById('auth-password').value.trim();
     const email = document.getElementById('auth-email').value.trim();
     const newsletter = document.getElementById('auth-newsletter').checked;
-    const registry = JSON.parse(localStorage.getItem('yarnstash_registry')) || {};
 
     if (!user || !pass || !email) return alert("All fields are required!");
-    if (registry[user]) return alert("Username taken!");
     if (!email.includes('@')) return alert("Please enter a valid email address!");
 
-    // Generate verification code
-    const verificationCode = Math.random().toString().slice(2, 8);
-    
-    // Store user data with verification status
-    registry[user] = { 
-        password: pass, 
-        email: email, 
-        newsletter: newsletter,
-        verified: false,
-        verificationCode: verificationCode,
-        createdAt: new Date().toISOString()
-    };
-    localStorage.setItem('yarnstash_registry', JSON.stringify(registry));
-
-    // Store pending verification user
-    pendingVerificationUser = user;
-    
-    // Show verification screen
-    showVerificationScreen(user, email, verificationCode);
+    // Send registration to backend
+    fetch('http://localhost:5000/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+            username: user, 
+            password: pass, 
+            email: email
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) {
+            return alert(data.error);
+        }
+        // Show "check your email" screen
+        showCheckEmailScreen(email);
+    })
+    .catch(err => alert('Connection error: ' + err.message));
 }
 
-        function showVerificationScreen(username, email, code) {
-            console.log('Showing verification screen for', username, email);
-            const authSection = document.getElementById('auth-section');
-            if (authSection) authSection.style.display = 'none';
+        function showCheckEmailScreen(email) {
+            document.getElementById('auth-section').style.display = 'none';
             
-            const displayEl = document.getElementById('verify-email-display');
-            if (displayEl) displayEl.innerText = email;
-            
-            const codeDisplayEl = document.getElementById('verify-code-display');
-            if (codeDisplayEl) codeDisplayEl.innerText = code;
-            
-            console.log('Verification code for testing: ' + code);
-            
-            const codeInput = document.getElementById('verify-code');
-            if (codeInput) codeInput.value = '';
-            
-            // Show the wrapper
-            const wrapper = document.getElementById('verify-modal-wrapper');
-            if (wrapper) wrapper.style.display = 'block';
-            sendVerificationEmail(email, code);
-        }
-
-        function sendVerificationEmail(email, code) {
-            const subject = encodeURIComponent('YarnStash verification code');
-            const body = encodeURIComponent(`Your YarnStash verification code is: ${code}\n\nEnter this code in the app to verify your account.`);
-            const mailtoLink = `mailto:${email}?subject=${subject}&body=${body}`;
-            console.log('Verification email link:', mailtoLink);
-            try {
-                const opened = window.open(mailtoLink, '_blank');
-                if (!opened) {
-                    alert('Your browser blocked the email popup. Please copy the verification code and send it from your email client: ' + code);
-                }
-            } catch (e) {
-                alert('Unable to open email client. Please copy the verification code and enter it here: ' + code);
+            // Create check email overlay
+            let overlay = document.getElementById('check-email-overlay');
+            if (!overlay) {
+                overlay = document.createElement('div');
+                overlay.id = 'check-email-overlay';
+                overlay.style.cssText = `
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0,0,0,0.5);
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    z-index: 10000;
+                `;
+                document.body.appendChild(overlay);
             }
+            
+            overlay.innerHTML = `
+                <div style="background: white; border-radius: 12px; padding: 40px; max-width: 400px; text-align: center; box-shadow: 0 10px 40px rgba(0,0,0,0.2);">
+                    <h2 style="color: #EA85C7; margin-bottom: 20px; font-size: 24px;">Verify Your Email! ✉️</h2>
+                    <p style="color: #666; font-size: 16px; margin-bottom: 15px;">We've sent a verification link to:</p>
+                    <p style="color: #333; font-weight: bold; font-size: 14px; margin-bottom: 30px; word-break: break-all;">${email}</p>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 30px; line-height: 1.5;">Click the link in your email to verify your account and log in to YarnStash.</p>
+                    <button onclick="closeCheckEmailScreen()" style="background-color: #EA85C7; color: white; padding: 12px 30px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px;">Got It!</button>
+                </div>
+            `;
+            overlay.style.display = 'flex';
+        }
+        
+        function closeCheckEmailScreen() {
+            const overlay = document.getElementById('check-email-overlay');
+            if (overlay) overlay.style.display = 'none';
+            
+            // Reset auth form
+            document.getElementById('auth-section').style.display = 'block';
+            document.getElementById('auth-username').value = '';
+            document.getElementById('auth-password').value = '';
+            document.getElementById('auth-email').value = '';
+            toggleAuthMode(); // Switch back to login mode
         }
 
-        function handleVerifyEmail() {
-            const enteredCode = document.getElementById('verify-code').value.trim();
-            const registry = JSON.parse(localStorage.getItem('yarnstash_registry')) || {};
-            const user = registry[pendingVerificationUser];
+        // Old verification functions removed - now using backend email verification
 
-            if (!enteredCode) return alert("Please enter the verification code!");
-            if (enteredCode === user.verificationCode) {
-                // Mark as verified
-                user.verified = true;
-                user.verificationCode = null; // Clear the code
-                registry[pendingVerificationUser] = user;
-                localStorage.setItem('yarnstash_registry', JSON.stringify(registry));
-                
-                // Log them in
-                currentUser = pendingVerificationUser;
-                yarnStash = [];
-                saveData();
-                
-                // Close verification modal
-                const wrapper = document.getElementById('verify-modal-wrapper');
-                if (wrapper) wrapper.style.display = 'none';
-                
-                loginSuccess();
-            } else {
-                alert("Invalid verification code. Please try again.");
-            }
-        }
-
-        function resendVerificationCode() {
-            const registry = JSON.parse(localStorage.getItem('yarnstash_registry')) || {};
-            const user = registry[pendingVerificationUser];
-            const newCode = Math.random().toString().slice(2, 8);
-            user.verificationCode = newCode;
-            registry[pendingVerificationUser] = user;
-            localStorage.setItem('yarnstash_registry', JSON.stringify(registry));
-            console.log('New verification code for testing: ' + newCode);
-            alert('Verification code has been resent. Check console for the code.');
-        }
 
         function loginSuccess() {
             document.getElementById('auth-section').style.display = 'none';
@@ -842,5 +821,6 @@
     </script>
     <script data-name="BMC-Widget" data-cfasync="false" src="https://cdnjs.buymeacoffee.com/1.0.0/widget.prod.min.js" data-id="yarnstash" data-description="Support me on Buy me a coffee!" data-message="want more perks? check out buy me a coffee for membership options!" data-color="#FFDD00" data-position="Right" data-x_margin="18" data-y_margin="18"></script>
 </body>
+</html>
 </html>
 </html>
