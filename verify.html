@@ -151,8 +151,8 @@
     const inputs = document.querySelectorAll('.code-input');
     const form = document.getElementById('verify-form');
     const resendLink = document.getElementById('resend-link');
-    const timerSpan = document.getElementById('timer');
-
+    // timerSpan will be queried dynamically to avoid stale references
+    
     // 1. Auto-Focus Next Element, Backspace Logic, and Numeric Validation
     inputs.forEach((input, index) => {
         input.addEventListener('input', (e) => {
@@ -172,23 +172,23 @@
         });
     });
 
-    // 2. Premium UX: Clipboard Paste Support across all 6 slots
-    inputs[0].addEventListener('paste', (e) => {
-        e.preventDefault();
-        const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
-        
-        // Check if pasted value is completely a number and long enough
-        if (/^\d+$/.test(pasteData)) {
-            const digits = pasteData.split('');
-            inputs.forEach((input, index) => {
-                if (digits[index]) {
-                    input.value = digits[index];
-                    if (index < inputs.length - 1) {
-                        inputs[index + 1].focus();
-                    }
+    // 2. Premium UX: Clipboard Paste Support across all inputs
+    inputs.forEach((startInput, startIndex) => {
+        startInput.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
+
+            // Only handle numeric paste
+            if (/^\d+$/.test(pasteData)) {
+                const digits = pasteData.split('');
+                for (let i = 0; i < digits.length && (startIndex + i) < inputs.length; i++) {
+                    inputs[startIndex + i].value = digits[i];
                 }
-            });
-        }
+                // Focus next empty input or the last filled
+                const nextPos = Math.min(startIndex + digits.length, inputs.length - 1);
+                inputs[nextPos].focus();
+            }
+        });
     });
 
     // 3. Prevent Spamming: Active Countdown Resend Timer Loop
@@ -196,11 +196,13 @@
     function startResendTimer() {
         const interval = setInterval(() => {
             countdown--;
-            timerSpan.textContent = countdown;
+            const t = document.getElementById('timer');
+            if (t) t.textContent = countdown;
             if (countdown <= 0) {
                 clearInterval(interval);
                 resendLink.classList.remove('disabled');
-                resendLink.innerHTML = "Resend code";
+                // show simple label when enabled
+                resendLink.textContent = "Resend code";
             }
         }, 1000);
     }
@@ -211,8 +213,8 @@
         if (resendLink.classList.contains('disabled')) return;
         
         alert("A fresh 6-digit confirmation code has been dispatched!");
-        
-        // Reset the timer parameters
+
+        // Reset the timer parameters and rebuild the timer span
         countdown = 30;
         resendLink.classList.add('disabled');
         resendLink.innerHTML = 'Resend code (in <span id="timer">30</span>s)';
