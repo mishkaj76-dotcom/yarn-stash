@@ -717,19 +717,29 @@
             }
 
             // Add online pattern search options
-            const searchQuery = `${yarn.brand} ${yarn.color} crochet patterns`;
+            const searchQuery = `${yarn.brand} ${yarn.color} ${weightLabels[yarn.weight]} yarn ${yarn.hook} crochet pattern ${yarn.yardage} yards`;
             const searchQueries = {
                 general: searchQuery,
-                color: `${yarn.color} yarn crochet patterns`,
-                weight: `weight ${yarn.weight} yarn crochet patterns`,
-                brand: `${yarn.brand} patterns`
+                color: `${yarn.color} yarn crochet pattern ${yarn.yardage} yards`,
+                weight: `${weightLabels[yarn.weight]} yarn crochet pattern`,
+                brand: `${yarn.brand} crochet pattern`
             };
 
             const sites = [
                 {
-                    name: '🎨 Pinterest',
-                    caption: 'Pinterest',
-                    url: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(searchQueries.general)}`
+                    name: '🌐 Web Search',
+                    caption: 'DuckDuckGo',
+                    url: `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQueries.general)}`
+                },
+                {
+                    name: '🔍 Google Search',
+                    caption: 'Google',
+                    url: `https://www.google.com/search?q=${encodeURIComponent(searchQueries.general)}`
+                },
+                {
+                    name: '🟦 Bing Search',
+                    caption: 'Bing',
+                    url: `https://www.bing.com/search?q=${encodeURIComponent(searchQueries.general)}`
                 },
                 {
                     name: '🧶 Ravelry',
