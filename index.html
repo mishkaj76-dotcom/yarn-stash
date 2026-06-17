@@ -252,6 +252,10 @@
                 </div>
 
                 <div id="project-results" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                <div id="online-patterns-section" class="mt-12">
+                    <h3 class="text-lg font-semibold text-[#FEF9FB] mb-4">Search Online for More Patterns</h3>
+                    <div id="online-patterns-results" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+                </div>
                 <div id="no-matches" class="hidden-section text-center py-10 glass rounded-3xl">
                     <p class="text-gray-400">Select a compatible yarn to see projects.</p>
                 </div>
@@ -670,11 +674,15 @@
         function filterProjects() {
             const idx = document.getElementById('match-yarn-dropdown').value;
             const results = document.getElementById('project-results');
+            const onlineResults = document.getElementById('online-patterns-results');
             const noMatches = document.getElementById('no-matches');
+            const onlineSection = document.getElementById('online-patterns-section');
             results.innerHTML = '';
+            onlineResults.innerHTML = '';
 
             if (idx === '') {
                 noMatches.classList.remove('hidden-section');
+                onlineSection.classList.add('hidden-section');
                 return;
             }
 
@@ -682,28 +690,92 @@
             const compatible = recipes.filter(r => r.weight === yarn.weight && r.yardage <= yarn.yardage);
 
             if (compatible.length === 0) {
-                results.innerHTML = '<div class="col-span-full text-center py-10 glass">No patterns match this yardage/weight yet. Try a different yarn!</div>';
+                results.innerHTML = '<div class="col-span-full text-center py-10 glass">No patterns match this yardage/weight yet.</div>';
                 noMatches.classList.add('hidden-section');
-                return;
+            } else {
+                noMatches.classList.add('hidden-section');
+                compatible.forEach(proj => {
+                    const card = document.createElement('div');
+                    card.className = 'glass p-6 animate-fade flex flex-col';
+                    card.innerHTML = `
+                        <div class="flex justify-between items-center mb-4">
+                            <div>
+                                <h3 class="font-bold text-lg">${proj.name}</h3>
+                                <p class="text-xs text-gray-400">Built-in Recipe</p>
+                            </div>
+                            <span class="text-xs bg-white/10 px-2 py-1 rounded">${proj.hook} Hook</span>
+                        </div>
+                        <div class="text-sm text-gray-400 mb-6 space-y-1">
+                            <p>Requires: ${proj.yardage} yds</p>
+                            <p>Available: <span class="text-green-400">${yarn.yardage} yds</span></p>
+                        </div>
+                        <button onclick="viewPattern('${proj.id}', ${idx})" class="mt-auto btn-primary py-2 rounded-lg text-sm font-semibold">Start Project</button>
+                    `;
+                    results.appendChild(card);
+                });
             }
 
-            noMatches.classList.add('hidden-section');
-            compatible.forEach(proj => {
+            // Add online pattern search options
+            const searchQuery = `${yarn.brand} ${yarn.color} crochet patterns`;
+            const searchQueries = {
+                general: searchQuery,
+                color: `${yarn.color} yarn crochet patterns`,
+                weight: `weight ${yarn.weight} yarn crochet patterns`,
+                brand: `${yarn.brand} patterns`
+            };
+
+            const sites = [
+                {
+                    name: '🎨 Pinterest',
+                    caption: 'Pinterest',
+                    url: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(searchQueries.general)}`
+                },
+                {
+                    name: '🧶 Ravelry',
+                    caption: 'Ravelry',
+                    url: `https://www.ravelry.com/patterns/search?craft=crochet&query=${encodeURIComponent(searchQueries.general)}`
+                },
+                {
+                    name: '❤️ AllFree Crochet',
+                    caption: 'AllFree Crochet',
+                    url: `https://www.allfreecrochet.com/search?q=${encodeURIComponent(searchQueries.color)}`
+                },
+                {
+                    name: '🎯 Crochet.com',
+                    caption: 'Crochet.com',
+                    url: `https://www.crochet.com/?s=${encodeURIComponent(searchQueries.general)}`
+                },
+                {
+                    name: '💝 LoveCrafts',
+                    caption: 'LoveCrafts',
+                    url: `https://www.lovecrafts.com/en-us/search?query=${encodeURIComponent(searchQueries.general)}`
+                },
+                {
+                    name: '🌈 Color Search',
+                    caption: 'Pinterest (by Color)',
+                    url: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(searchQueries.color)}`
+                }
+            ];
+
+            sites.forEach(site => {
                 const card = document.createElement('div');
                 card.className = 'glass p-6 animate-fade flex flex-col';
                 card.innerHTML = `
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="font-bold text-lg">${proj.name}</h3>
-                        <span class="text-xs bg-white/10 px-2 py-1 rounded">${proj.hook} Hook</span>
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h3 class="font-bold text-lg">${site.name}</h3>
+                            <p class="text-xs text-gray-400">${site.caption}</p>
+                        </div>
                     </div>
-                    <div class="text-sm text-gray-400 mb-6 space-y-1">
-                        <p>Requires: ${proj.yardage} yds</p>
-                        <p>Available: <span class="text-green-400">${yarn.yardage} yds</span></p>
-                    </div>
-                    <button onclick="viewPattern('${proj.id}', ${idx})" class="mt-auto btn-primary py-2 rounded-lg text-sm font-semibold">Start Project</button>
+                    <p class="text-sm text-gray-300 mb-4">Find crochet patterns matching <span class="font-semibold">${yarn.brand}</span> in <span class="font-semibold">${yarn.color}</span> (Weight ${yarn.weight})</p>
+                    <a href="${site.url}" target="_blank" rel="noopener noreferrer" class="mt-auto inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold transition-all hover:shadow-lg">
+                        🔗 Visit Link for Pattern!
+                    </a>
                 `;
-                results.appendChild(card);
+                onlineResults.appendChild(card);
             });
+
+            onlineSection.classList.remove('hidden-section');
         }
 
         let currentProjectYarnIdx = null;
