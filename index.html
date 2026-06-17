@@ -331,6 +331,7 @@
     </div>
 
     <script>
+        const SCRAPER_API_BASE = 'http://localhost:3000';
         let currentUser = null;
         let yarnStash = [];
         let isSignUpMode = false;
@@ -827,92 +828,40 @@
             document.getElementById('patterns-modal').classList.add('hidden-section');
         }
 
-        function findPatternsForYarn(index) {
+        async function findPatternsForYarn(index) {
             const yarn = yarnStash[index];
-            const searchDesc = `Search patterns for: <strong>${yarn.brand}</strong> in ${yarn.color} (Weight ${yarn.weight})`;
+            const searchDesc = `Searching live patterns for: <strong>${yarn.brand}</strong> — ${yarn.color} (Weight ${yarn.weight})`;
             document.getElementById('pattern-search-desc').innerHTML = searchDesc;
-            
+
             const patternLinks = document.getElementById('pattern-links');
-            patternLinks.innerHTML = '';
-            
-            const searchQuery = `${yarn.brand} ${yarn.color} crochet patterns`;
-            const searchQueries = {
-                general: searchQuery,
-                color: `${yarn.color} yarn crochet patterns`,
-                weight: `weight ${yarn.weight} yarn crochet patterns`,
-                brand: `${yarn.brand} patterns`
-            };
+            patternLinks.innerHTML = '<div class="text-sm text-gray-400">Searching live sites...</div>';
 
-            const sites = [
-                {
-                    name: '🎨 Pinterest',
-                    url: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(searchQueries.general)}`,
-                    icon: '📌'
-                },
-                {
-                    name: '🧶 Ravelry',
-                    url: `https://www.ravelry.com/patterns/search?craft=crochet&query=${encodeURIComponent(searchQueries.general)}`,
-                    icon: '🔗'
-                },
-                {
-                    name: '❤️ AllFree Crochet',
-                    url: `https://www.allfreecrochet.com/search?q=${encodeURIComponent(searchQueries.color)}`,
-                    icon: '💚'
-                },
-                {
-                    name: '🎯 Crochet.com',
-                    url: `https://www.crochet.com/?s=${encodeURIComponent(searchQueries.general)}`,
-                    icon: '🧣'
-                },
-                {
-                    name: '💝 LoveCrafts',
-                    url: `https://www.lovecrafts.com/en-us/search?query=${encodeURIComponent(searchQueries.general)}`,
-                    icon: '💖'
-                },
-                {
-                    name: '🎨 Yarn Inspirations',
-                    url: `https://www.yarninspirationspatterns.com/?s=${encodeURIComponent(searchQueries.general)}`,
-                    icon: '✨'
-                },
-                {
-                    name: '🪝 Cilla Crochets Resources',
-                    url: `https://www.cillacrochets.com/crochet-resources/find-free-crochet-patterns/`,
-                    icon: '🌟'
-                },
-                {
-                    name: '📖 TLY Crochet Blog',
-                    url: `https://tlycblog.com/10-best-free-crochet-pattern-sites-resources/`,
-                    icon: '📚'
-                },
-                {
-                    name: '🌈 Color Search (via Pinterest)',
-                    url: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(searchQueries.color)}`,
-                    icon: '🎨'
-                }
-            ];
-
-            sites.forEach(site => {
-                const linkEl = document.createElement('a');
-                linkEl.href = site.url;
-                linkEl.target = '_blank';
-                linkEl.rel = 'noopener noreferrer';
-                linkEl.className = 'block p-4 glass rounded-lg hover:bg-white/20 transition-all group cursor-pointer';
-                linkEl.innerHTML = `
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <span class="text-2xl">${site.icon}</span>
-                            <div>
-                                <p class="font-semibold text-[#FEF9FB] group-hover:text-[#EA85C7] transition-colors">${site.name}</p>
-                                <p class="text-xs text-gray-400 truncate max-w-sm">${site.url.substring(0, 60)}...</p>
+            const query = `${yarn.brand} ${yarn.color} crochet patterns`;
+            try {
+                const resp = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(query)}&site=all`);
+                const data = await resp.json();
+                patternLinks.innerHTML = '';
+                if (!data.ok || !data.results || data.results.length === 0) {
+                    patternLinks.innerHTML = '<div class="col-span-full text-center py-6 glass">No live patterns found. Try different keywords.</div>';
+                } else {
+                    data.results.slice(0, 20).forEach(item => {
+                        const card = document.createElement('div');
+                        card.className = 'glass p-4 rounded-lg flex items-start justify-between';
+                        card.innerHTML = `
+                            <div class="pr-4">
+                                <p class="font-semibold text-lg">${item.title}</p>
+                                <p class="text-xs text-gray-400">${item.site}</p>
                             </div>
-                        </div>
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 group-hover:text-[#6AD8FB]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                    </div>
-                `;
-                patternLinks.appendChild(linkEl);
-            });
+                            <div class="flex flex-col items-end gap-2">
+                                <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-semibold">Visit link for pattern!</a>
+                            </div>
+                        `;
+                        patternLinks.appendChild(card);
+                    });
+                }
+            } catch (err) {
+                patternLinks.innerHTML = '<div class="col-span-full text-center py-6 glass">Error searching live sites.</div>';
+            }
 
             document.getElementById('patterns-modal').classList.remove('hidden-section');
         }
@@ -956,4 +905,3 @@
     </script>
 </body>
 </html>
-
