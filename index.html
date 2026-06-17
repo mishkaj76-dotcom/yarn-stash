@@ -277,6 +277,20 @@
             </div>
         </div>
 
+        <div id="patterns-modal" class="fixed inset-0 z-[100] hidden-section flex items-center justify-center p-4">
+            <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" onclick="closePatternModal()"></div>
+            <div class="glass w-full max-w-3xl max-h-[80vh] overflow-y-auto p-8 relative z-10 animate-fade">
+                <div class="flex justify-between items-start mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-[#FEF9FB]">Find Patterns</h2>
+                        <p id="pattern-search-desc" class="text-sm text-gray-400 mt-2"></p>
+                    </div>
+                    <button onclick="closePatternModal()" class="text-gray-400 hover:text-white text-2xl" aria-label="Close modal">&times;</button>
+                </div>
+                <div id="pattern-links" class="space-y-3"></div>
+            </div>
+        </div>
+
         <div id="success-toast" style="display: none; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #fff1f2; padding: 15px 30px; border-radius: 50px; color: #ff8fb1; text-align: center; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ff8fb1;">
             ✨ Yarn successfully logged!
         </div>
@@ -460,14 +474,16 @@
                 return;
             }
 
+            const verificationCode = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
             userRegistry[user] = {
                 password: pass,
                 email,
                 verified: false,
+                verificationCode,
                 created: new Date().toISOString()
             };
             localStorage.setItem('yarnstash_global_registry', JSON.stringify(userRegistry));
-            localStorage.setItem('yarnstash_pending_verification', JSON.stringify({ user, email }));
+            localStorage.setItem('yarnstash_pending_verification', JSON.stringify({ user, email, verificationCode }));
             window.location.href = `verify.html?user=${encodeURIComponent(user)}&email=${encodeURIComponent(email)}`;
         }
 
@@ -568,7 +584,10 @@
                         <button onclick="toggleStatus(${index})" class="text-xs font-semibold px-3 py-1 rounded-full border ${yarn.status === 'Available' ? 'border-green-400 text-green-400' : 'border-yellow-400 text-yellow-400'}">
                             ${yarn.status}
                         </button>
-                        <button onclick="findMatchForYarn(${index})" class="text-xs text-[#EA85C7] underline decoration-[#EA85C7]/30 underline-offset-4">Find Match</button>
+                        <div class="flex gap-2">
+                            <button onclick="findPatternsForYarn(${index})" class="text-xs text-blue-400 underline decoration-blue-400/30 underline-offset-4" title="Find crochet patterns">Find Patterns</button>
+                            <button onclick="findMatchForYarn(${index})" class="text-xs text-[#EA85C7] underline decoration-[#EA85C7]/30 underline-offset-4">Find Match</button>
+                        </div>
                     </div>
                 `;
                 grid.appendChild(card);
@@ -621,8 +640,12 @@
 
             document.getElementById('log-form').reset();
             document.getElementById('weight-val').innerText = weightLabels[4];
-            switchTab('stash');
             renderStash();
+            
+            // Automatically show pattern finder for the new yarn
+            setTimeout(() => {
+                findPatternsForYarn(yarnStash.length - 1);
+            }, 500);
         });
 
         function updateMatchDropdown() {
@@ -728,6 +751,100 @@
             document.getElementById('pattern-modal').classList.add('hidden-section');
         }
 
+        function closePatternModal() {
+            document.getElementById('patterns-modal').classList.add('hidden-section');
+        }
+
+        function findPatternsForYarn(index) {
+            const yarn = yarnStash[index];
+            const searchDesc = `Search patterns for: <strong>${yarn.brand}</strong> in ${yarn.color} (Weight ${yarn.weight})`;
+            document.getElementById('pattern-search-desc').innerHTML = searchDesc;
+            
+            const patternLinks = document.getElementById('pattern-links');
+            patternLinks.innerHTML = '';
+            
+            const searchQuery = `${yarn.brand} ${yarn.color} crochet patterns`;
+            const searchQueries = {
+                general: searchQuery,
+                color: `${yarn.color} yarn crochet patterns`,
+                weight: `weight ${yarn.weight} yarn crochet patterns`,
+                brand: `${yarn.brand} patterns`
+            };
+
+            const sites = [
+                {
+                    name: '🎨 Pinterest',
+                    url: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(searchQueries.general)}`,
+                    icon: '📌'
+                },
+                {
+                    name: '🧶 Ravelry',
+                    url: `https://www.ravelry.com/patterns/search?craft=crochet&query=${encodeURIComponent(searchQueries.general)}`,
+                    icon: '🔗'
+                },
+                {
+                    name: '❤️ AllFree Crochet',
+                    url: `https://www.allfreecrochet.com/search?q=${encodeURIComponent(searchQueries.color)}`,
+                    icon: '💚'
+                },
+                {
+                    name: '🎯 Crochet.com',
+                    url: `https://www.crochet.com/?s=${encodeURIComponent(searchQueries.general)}`,
+                    icon: '🧣'
+                },
+                {
+                    name: '💝 LoveCrafts',
+                    url: `https://www.lovecrafts.com/en-us/search?query=${encodeURIComponent(searchQueries.general)}`,
+                    icon: '💖'
+                },
+                {
+                    name: '🎨 Yarn Inspirations',
+                    url: `https://www.yarninspirationspatterns.com/?s=${encodeURIComponent(searchQueries.general)}`,
+                    icon: '✨'
+                },
+                {
+                    name: '🪝 Cilla Crochets Resources',
+                    url: `https://www.cillacrochets.com/crochet-resources/find-free-crochet-patterns/`,
+                    icon: '🌟'
+                },
+                {
+                    name: '📖 TLY Crochet Blog',
+                    url: `https://tlycblog.com/10-best-free-crochet-pattern-sites-resources/`,
+                    icon: '📚'
+                },
+                {
+                    name: '🌈 Color Search (via Pinterest)',
+                    url: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(searchQueries.color)}`,
+                    icon: '🎨'
+                }
+            ];
+
+            sites.forEach(site => {
+                const linkEl = document.createElement('a');
+                linkEl.href = site.url;
+                linkEl.target = '_blank';
+                linkEl.rel = 'noopener noreferrer';
+                linkEl.className = 'block p-4 glass rounded-lg hover:bg-white/20 transition-all group cursor-pointer';
+                linkEl.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">${site.icon}</span>
+                            <div>
+                                <p class="font-semibold text-[#FEF9FB] group-hover:text-[#EA85C7] transition-colors">${site.name}</p>
+                                <p class="text-xs text-gray-400 truncate max-w-sm">${site.url.substring(0, 60)}...</p>
+                            </div>
+                        </div>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 group-hover:text-[#6AD8FB]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                        </svg>
+                    </div>
+                `;
+                patternLinks.appendChild(linkEl);
+            });
+
+            document.getElementById('patterns-modal').classList.remove('hidden-section');
+        }
+
         window.onload = () => {
             const savedSession = localStorage.getItem('yarnstash_current_session');
             if (savedSession) {
@@ -767,3 +884,4 @@
     </script>
 </body>
 </html>
+
