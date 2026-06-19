@@ -907,6 +907,11 @@
 
             try {
                 const resp = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(query)}&site=all`);
+                if (!resp.ok) {
+                    container.innerHTML = '<div class="glass p-4 text-sm text-red-400"><p class="font-semibold">Yarniverse offline</p><p>The pattern search proxy is not running. Start it with: <code>cd scraper && npm start</code></p></div>';
+                    console.error('Scraper proxy not responding:', resp.status);
+                    return;
+                }
                 const data = await resp.json();
                 container.innerHTML = '';
 
@@ -928,7 +933,8 @@
                     container.appendChild(resultCard);
                 });
             } catch (err) {
-                container.innerHTML = '<div class="glass p-4 text-sm text-red-400">Unable to load Yarniverse results.</div>';
+                console.error('Yarniverse search error:', err);
+                container.innerHTML = '<div class="glass p-4 text-sm text-red-400"><p class="font-semibold">Connection failed</p><p>Cannot reach Yarniverse proxy at ' + SCRAPER_API_BASE + '</p><p class="text-xs mt-2">Ensure the proxy is running: <code>cd scraper && npm start</code></p></div>';
             }
         }
 
@@ -943,6 +949,12 @@
             const query = buildYarnQuery(yarn);
             try {
                 const resp = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(query)}&site=all`);
+                if (!resp.ok) {
+                    patternLinks.innerHTML = '<div class="col-span-full text-center py-6 glass"><p class="font-semibold text-red-400">Yarniverse offline</p><p class="text-sm text-gray-400 mt-2">Start the proxy: <code>cd scraper && npm start</code></p></div>';
+                    console.error('Scraper proxy not responding:', resp.status);
+                    document.getElementById('patterns-modal').classList.remove('hidden-section');
+                    return;
+                }
                 const data = await resp.json();
                 patternLinks.innerHTML = '';
                 if (!data.ok || !data.results || data.results.length === 0) {
@@ -964,7 +976,8 @@
                     });
                 }
             } catch (err) {
-                patternLinks.innerHTML = '<div class="col-span-full text-center py-6 glass">Error searching live sites.</div>';
+                console.error('Pattern search error:', err);
+                patternLinks.innerHTML = '<div class="col-span-full text-center py-6 glass"><p class=\"font-semibold text-red-400\">Connection failed</p><p class=\"text-sm text-gray-400 mt-2\">Cannot reach Yarniverse proxy. Make sure it\'s running:</p><p class=\"text-xs mt-2\"><code>cd scraper && npm start</code></p></div>';
             }
 
             document.getElementById('patterns-modal').classList.remove('hidden-section');
