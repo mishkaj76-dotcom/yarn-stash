@@ -341,13 +341,25 @@
             'Medium (4)', 'Bulky (5)', 'Super Bulky (6)', 'Jumbo (7)'
         ];
 
-        const recipes = [
+        function buildYarnQuery(yarn) {
+            return [
+                yarn.brand,
+                yarn.color,
+                `${weightLabels[yarn.weight]} yarn`,
+                yarn.hook ? `${yarn.hook} hook` : '',
+                yarn.yardage ? `${yarn.yardage} yards` : '',
+                'crochet pattern'
+            ].filter(Boolean).join(' ');
+        }
+
+        const curatedPatterns = [
             {
                 id: 'beanie',
                 name: 'Simple Slouchy Beanie',
                 weight: 4,
                 yardage: 200,
                 hook: '5.0mm',
+                url: 'https://www.allfreecrochet.com/Crochet-Pattern-Archive/Simple-Slouchy-Beanie-Crochet-Pattern',
                 steps: [
                     'Round 1: Magic ring, 12 DC into ring. Join.',
                     'Round 2: 2 DC in each st around. (24 DC)',
@@ -363,6 +375,7 @@
                 weight: 4,
                 yardage: 150,
                 hook: '3.5mm',
+                url: 'https://www.ravelry.com/patterns/library/amigurumi-octopus',
                 steps: [
                     'Head: Round 1-6: Standard SC increases to 36 sts.',
                     'Rounds 7-12: SC around.',
@@ -376,6 +389,7 @@
                 weight: 4,
                 yardage: 1200,
                 hook: '6.0mm',
+                url: 'https://www.pinterest.com/pin/granny-square-blanket-pattern/',
                 steps: [
                     'Center: Ch 4, join to form ring.',
                     'Round 1: (3 DC, ch 2) 4 times into ring.',
@@ -389,6 +403,7 @@
                 weight: 4,
                 yardage: 450,
                 hook: '5.0mm',
+                url: 'https://www.lovecrafts.com/en-us/p/crochet-tote-bag-pattern',
                 steps: [
                     'Base: Chain 31. SC in 2nd ch and across. Rotate and SC on other side.',
                     'Body: Work in Mesh Stitch (DC, ch 1, skip 1) for 25 rounds.',
@@ -401,6 +416,7 @@
                 weight: 5,
                 yardage: 1200,
                 hook: '6.5mm',
+                url: 'https://www.yarnspirations.com/patterns/cloud-soft-oversized-sweater',
                 steps: [
                     'Back Panel: Ch 65. HDC for 50 rows.',
                     'Front Panel: Ch 65 for 45 rows, then shape neckline.',
@@ -414,6 +430,7 @@
                 weight: 3,
                 yardage: 300,
                 hook: '3.5mm',
+                url: 'https://www.crochet.com/patterns/luxury-chevron-clutch',
                 steps: [
                     'Flap: Ch 41. Work in Chevron pattern (2 SC in first, 8 SC, skip 2, 8 SC, 3 SC in next).',
                     'Body: Work 30 rows of Chevron pattern.',
@@ -426,11 +443,105 @@
                 weight: 4,
                 yardage: 250,
                 hook: '3.25mm',
+                url: 'https://www.ravelry.com/patterns/library/brachiosaurus-plushie',
                 steps: [
                     'Body: R1-10: Inc to 48 SC. R11-20: SC around. R21-30: Dec to 12.',
                     'Neck: Long tube of 15 SC for 25 rows.',
                     'Legs: Make 4 small cylinders.',
                     'Tail: Conical shape decreasing from 18 to 6 SC.'
+                ]
+            },
+            {
+                id: 'lacy-shawl',
+                name: 'Sunset Lacy Shawl',
+                weight: 1,
+                yardage: 900,
+                hook: '3.0mm',
+                url: 'https://www.ravelry.com/patterns/library/sunset-lacy-shawl',
+                steps: [
+                    'Chain 180, then work alternating shell and chain rows.',
+                    'Repeat mesh shells for 20 rows.',
+                    'Finish with a scallop border.'
+                ]
+            },
+            {
+                id: 'fingerless-mitts',
+                name: 'Textured Fingerless Mitts',
+                weight: 3,
+                yardage: 120,
+                hook: '4.0mm',
+                url: 'https://www.ravelry.com/patterns/library/textured-fingerless-mitts',
+                steps: [
+                    'Work wrist cuff in back loop only for 12 rows.',
+                    'Switch to textured stitch for 16 rows.',
+                    'Separate thumb opening and finish with edging.'
+                ]
+            },
+            {
+                id: 'chunky-scarf',
+                name: 'Cloudy Chunky Scarf',
+                weight: 6,
+                yardage: 250,
+                hook: '10.0mm',
+                url: 'https://www.allfreecrochet.com/Chunky-Scarf-Pattern',
+                steps: [
+                    'Chain 18.',
+                    'Row 1: SC across.',
+                    'Row 2-40: V-stitch rows until desired length.',
+                    'Finish with fringe.'
+                ]
+            },
+            {
+                id: 'coaster-set',
+                name: 'Color Block Coaster Set',
+                weight: 3,
+                yardage: 80,
+                hook: '4.0mm',
+                url: 'https://www.pinterest.com/pin/color-block-coasters/',
+                steps: [
+                    'Ch 16.',
+                    'Round 1: SC in each st and join.',
+                    'Round 2: Alternate color rows.',
+                    'Finish with a clean edge.'
+                ]
+            },
+            {
+                id: 'plant-basket',
+                name: 'Boho Plant Basket',
+                weight: 5,
+                yardage: 400,
+                hook: '6.0mm',
+                url: 'https://www.lovecrafts.com/en-us/p/crochet-plant-basket-pattern',
+                steps: [
+                    'Start with a round base of SC.',
+                    'Build the walls with HDC.',
+                    'Add a rope border around the top.'
+                ]
+            },
+            {
+                id: 'baby-cardigan',
+                name: 'Sweet Baby Cardigan',
+                weight: 3,
+                yardage: 550,
+                hook: '4.5mm',
+                url: 'https://www.yarnspirations.com/patterns/baby-cardigan',
+                steps: [
+                    'Work back panel and two front panels separately.',
+                    'Seam shoulders and sides.',
+                    'Add button band and sleeves.'
+                ]
+            },
+            {
+                id: 'rug-pouf',
+                name: 'Cozy Floor Pouf',
+                weight: 7,
+                yardage: 1000,
+                hook: '12.0mm',
+                url: 'https://www.ravelry.com/patterns/library/cozy-floor-pouf',
+                steps: [
+                    'Crochet a large circle base.',
+                    'Build up side walls with DC rounds.',
+                    'Stuff firmly and close top.'
                 ]
             }
         ];
@@ -688,7 +799,7 @@
             }
 
             const yarn = yarnStash[idx];
-            const compatible = recipes.filter(r => r.weight === yarn.weight && r.yardage <= yarn.yardage);
+            const compatible = curatedPatterns.filter(r => r.weight === yarn.weight && r.yardage <= yarn.yardage);
 
             if (compatible.length === 0) {
                 results.innerHTML = '<div class="col-span-full text-center py-10 glass">No patterns match this yardage/weight yet.</div>';
@@ -717,87 +828,39 @@
             }
 
             // Add online pattern search options
-            const searchQuery = `${yarn.brand} ${yarn.color} ${weightLabels[yarn.weight]} yarn ${yarn.hook} crochet pattern ${yarn.yardage} yards`;
-            const searchQueries = {
-                general: searchQuery,
-                color: `${yarn.color} yarn crochet pattern ${yarn.yardage} yards`,
-                weight: `${weightLabels[yarn.weight]} yarn crochet pattern`,
-                brand: `${yarn.brand} crochet pattern`
-            };
+            const yarnQuery = buildYarnQuery(yarn);
 
-            const sites = [
-                {
-                    name: '🌐 Web Search',
-                    caption: 'DuckDuckGo',
-                    url: `https://html.duckduckgo.com/html/?q=${encodeURIComponent(searchQueries.general)}`
-                },
-                {
-                    name: '🔍 Google Search',
-                    caption: 'Google',
-                    url: `https://www.google.com/search?q=${encodeURIComponent(searchQueries.general)}`
-                },
-                {
-                    name: '🟦 Bing Search',
-                    caption: 'Bing',
-                    url: `https://www.bing.com/search?q=${encodeURIComponent(searchQueries.general)}`
-                },
-                {
-                    name: '🧶 Ravelry',
-                    caption: 'Ravelry',
-                    url: `https://www.ravelry.com/patterns/search?craft=crochet&query=${encodeURIComponent(searchQueries.general)}`
-                },
-                {
-                    name: '❤️ AllFree Crochet',
-                    caption: 'AllFree Crochet',
-                    url: `https://www.allfreecrochet.com/search?q=${encodeURIComponent(searchQueries.color)}`
-                },
-                {
-                    name: '🎯 Crochet.com',
-                    caption: 'Crochet.com',
-                    url: `https://www.crochet.com/?s=${encodeURIComponent(searchQueries.general)}`
-                },
-                {
-                    name: '💝 LoveCrafts',
-                    caption: 'LoveCrafts',
-                    url: `https://www.lovecrafts.com/en-us/search?query=${encodeURIComponent(searchQueries.general)}`
-                },
-                {
-                    name: '🌈 Color Search',
-                    caption: 'Pinterest (by Color)',
-                    url: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(searchQueries.color)}`
-                }
-            ];
-
-            sites.forEach(site => {
-                const card = document.createElement('div');
-                card.className = 'glass p-6 animate-fade flex flex-col';
-                card.innerHTML = `
-                    <div class="flex items-start justify-between mb-4">
-                        <div>
-                            <h3 class="font-bold text-lg">${site.name}</h3>
-                            <p class="text-xs text-gray-400">${site.caption}</p>
-                        </div>
+            const card = document.createElement('div');
+            card.className = 'glass p-6 animate-fade flex flex-col';
+            card.innerHTML = `
+                <div class="flex items-start justify-between mb-4">
+                    <div>
+                        <h3 class="font-bold text-lg">✨ Yarniverse Search</h3>
+                        <p class="text-xs text-gray-400">Unified pattern results from across the yarn universe</p>
                     </div>
-                    <p class="text-sm text-gray-300 mb-4">Find crochet patterns matching <span class="font-semibold">${yarn.brand}</span> in <span class="font-semibold">${yarn.color}</span> (Weight ${yarn.weight})</p>
-                    <a href="${site.url}" target="_blank" rel="noopener noreferrer" class="mt-auto inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold transition-all hover:shadow-lg">
-                        🔎 Search for patterns on this site
-                    </a>
-                `;
-                onlineResults.appendChild(card);
-            });
+                </div>
+                <p class="text-sm text-gray-300 mb-4">Searching the Yarniverse for patterns matching <span class="font-semibold">${yarn.brand}</span> in <span class="font-semibold">${yarn.color}</span> (Weight ${yarn.weight})</p>
+                <p class="text-xs text-gray-400 mt-3">Query: ${yarnQuery}</p>
+                <div id="yarniverse-results-${idx}" class="mt-4 space-y-3">Loading pattern results...</div>
+            `;
+            onlineResults.appendChild(card);
 
+            loadYarniversePatternResults(yarn, document.getElementById(`yarniverse-results-${idx}`));
             onlineSection.classList.remove('hidden-section');
         }
 
         let currentProjectYarnIdx = null;
 
         function viewPattern(projId, yarnIdx) {
-            const proj = recipes.find(r => r.id === projId);
+            const proj = curatedPatterns.find(r => r.id === projId);
             currentProjectYarnIdx = yarnIdx;
             document.getElementById('modal-title').innerText = proj.name;
             document.getElementById('modal-stats').innerText = `Weight ${proj.weight} • ${proj.yardage} yds required • ${proj.hook} hook`;
             const content = document.getElementById('modal-content');
             content.innerHTML = `<ol class="list-decimal pl-5 space-y-3">${proj.steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
+            if (proj.url) {
+                content.innerHTML += `<div class="mt-6"><a href="${proj.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">View full pattern online</a></div>`;
+            }
             document.getElementById('pattern-modal').classList.remove('hidden-section');
 
             const deleteBtn = document.getElementById('delete-project-btn');
@@ -838,15 +901,46 @@
             document.getElementById('patterns-modal').classList.add('hidden-section');
         }
 
+        async function loadYarniversePatternResults(yarn, container) {
+            const query = buildYarnQuery(yarn);
+            container.innerHTML = '<div class="text-sm text-gray-400">Searching the Yarniverse...</div>';
+
+            try {
+                const resp = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(query)}&site=all`);
+                const data = await resp.json();
+                container.innerHTML = '';
+
+                if (!data.ok || !data.results || data.results.length === 0) {
+                    container.innerHTML = '<div class="glass p-4 text-sm text-gray-400">No specific pattern results found for that query.</div>';
+                    return;
+                }
+
+                data.results.slice(0, 10).forEach(item => {
+                    const resultCard = document.createElement('div');
+                    resultCard.className = 'glass p-4 rounded-lg flex flex-col gap-3';
+                    resultCard.innerHTML = `
+                        <div>
+                            <p class="font-semibold text-lg">${item.title}</p>
+                            <p class="text-xs text-gray-400">${item.site}</p>
+                        </div>
+                        <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Open pattern</a>
+                    `;
+                    container.appendChild(resultCard);
+                });
+            } catch (err) {
+                container.innerHTML = '<div class="glass p-4 text-sm text-red-400">Unable to load Yarniverse results.</div>';
+            }
+        }
+
         async function findPatternsForYarn(index) {
             const yarn = yarnStash[index];
-            const searchDesc = `Searching live patterns for: <strong>${yarn.brand}</strong> — ${yarn.color} (Weight ${yarn.weight})`;
+            const searchDesc = `Searching the Yarniverse for: <strong>${yarn.brand}</strong> — ${yarn.color} (Weight ${yarn.weight})`;
             document.getElementById('pattern-search-desc').innerHTML = searchDesc;
 
             const patternLinks = document.getElementById('pattern-links');
-            patternLinks.innerHTML = '<div class="text-sm text-gray-400">Searching live sites...</div>';
+            patternLinks.innerHTML = '<div class="text-sm text-gray-400">Searching the Yarniverse...</div>';
 
-            const query = `${yarn.brand} ${yarn.color} crochet patterns`;
+            const query = buildYarnQuery(yarn);
             try {
                 const resp = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(query)}&site=all`);
                 const data = await resp.json();
@@ -915,3 +1009,4 @@
     </script>
 </body>
 </html>
+
