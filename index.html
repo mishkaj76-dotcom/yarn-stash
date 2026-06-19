@@ -345,8 +345,8 @@
             return [
                 yarn.brand,
                 yarn.color,
-                `${weightLabels[yarn.weight]} yarn`,
-                yarn.hook ? `${yarn.hook} hook` : '',
+                `${weightLabels[yarn.weight]}`,
+                yarn.hook ? `${yarn.hook}mm` : '',
                 yarn.yardage ? `${yarn.yardage} yards` : '',
                 'crochet pattern'
             ].filter(Boolean).join(' ');
