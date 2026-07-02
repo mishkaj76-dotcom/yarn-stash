@@ -260,6 +260,62 @@
                     <p class="text-gray-400">Select a compatible yarn to see projects.</p>
                 </div>
             </section>
+
+            <section id="support-memberships" class="glass p-6 rounded-3xl mt-12">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-semibold">Buy Me a Coffee Membership Perks</h2>
+                    <p class="text-gray-400">These perks are for supporters who subscribe through Buy Me a Coffee and pay for membership.</p>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold mb-3">Join the YarnStash Circle</h3>
+                        <p class="text-3xl font-bold mb-4">$9<span class="text-sm font-normal">/month</span></p>
+                        <p class="text-gray-300 mb-4">Ready to show off your latest masterpiece? Our community is a vibrant space where passionate fiber artists share their work, exchange tips, and inspire one another.</p>
+                        <ul class="text-gray-400 space-y-2 mb-6">
+                            <li>Support me on a monthly basis</li>
+                            <li>Unlock exclusive posts and messages</li>
+                            <li>Post in the community!</li>
+                        </ul>
+                        <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
+                    </div>
+                    <div class="glass p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold mb-3">The “Skein” Member</h3>
+                        <p class="text-sm text-gray-300 mb-2">Paid / Monthly</p>
+                        <p class="text-3xl font-bold mb-4">$15<span class="text-sm font-normal">/month</span></p>
+                        <p class="text-gray-300 mb-4">Access unlimited stash logging and photo uploads. Post your own projects to the community feed and participate in Stash Challenges.</p>
+                        <ul class="text-gray-400 space-y-2 mb-6">
+                            <li>Support me on a monthly basis</li>
+                            <li>Unlock exclusive posts and messages</li>
+                            <li>Ad-free experience</li>
+                        </ul>
+                        <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
+                    </div>
+                    <div class="glass p-6 rounded-3xl">
+                        <h3 class="text-xl font-bold mb-3">The “Artisan” Member</h3>
+                        <p class="text-sm text-gray-300 mb-2">Annual / Higher Tier</p>
+                        <p class="text-3xl font-bold mb-4">$19<span class="text-sm font-normal">/month</span></p>
+                        <p class="text-gray-300 mb-4">Priority access to new features like the Pattern Matcher, plus a digital Verified Maker badge and export tools for stash tracking.</p>
+                        <ul class="text-gray-400 space-y-2 mb-6">
+                            <li>Support me on a monthly basis</li>
+                            <li>Unlock exclusive posts and messages</li>
+                            <li>Export stash as PDF or CSV</li>
+                        </ul>
+                        <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
+                    </div>
+                </div>
+            </section>
+
+            <section id="community-section" class="glass p-6 rounded-3xl mt-12">
+                <div class="mb-6">
+                    <h2 class="text-2xl font-semibold">YarnStash Community</h2>
+                    <p class="text-gray-400">Community is a vibrant space where passionate fiber artists share their work, exchange tips, and inspire one another.</p>
+                </div>
+                <div id="community-gate" class="glass p-6 rounded-3xl mb-6">
+                    <p class="text-gray-300 mb-4">This space is reserved for members only. Post your crafts, follow other makers, like posts, and leave comments.</p>
+                    <button onclick="openCommunity()" class="btn-primary w-full py-3 rounded-xl">Open Community</button>
+                </div>
+                <div id="community-feed" class="hidden-section space-y-6"></div>
+            </section>
         </main>
 
         <div id="pattern-modal" class="fixed inset-0 z-[100] hidden-section flex items-center justify-center p-4">
@@ -332,8 +388,118 @@
 
     <script>
         const SCRAPER_API_BASE = 'http://localhost:3000';
+        const CORS_PROXY_SERVICES = [
+            'https://api.allorigins.win/raw?url=',
+            'https://api.codetabs.com/v1/proxy?quest=',
+            'https://corsproxy.io/?',
+        ];
         let currentUser = null;
         let yarnStash = [];
+
+        function normalizeDuckDuckGoLink(href) {
+            try {
+                const url = new URL(href, 'https://duckduckgo.com');
+                if (url.hostname.endsWith('duckduckgo.com')) {
+                    const uddg = url.searchParams.get('uddg');
+                    if (uddg) return decodeURIComponent(uddg);
+                    return null;
+                }
+                return url.toString();
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function buildSearchTokens(query) {
+            return (query || '')
+                .toLowerCase()
+                .split(/\W+/)
+                .filter(t => t && t.length > 2 && !['crochet', 'pattern', 'yarn', 'hook', 'mm', 'yards', 'yardage', 'g'].includes(t));
+        }
+
+        async function fetchThroughCorsProxy(url) {
+            let lastError = null;
+            for (const proxy of CORS_PROXY_SERVICES) {
+                try {
+                    const response = await fetch(proxy + encodeURIComponent(url));
+                    if (!response.ok) {
+                        lastError = new Error(`CORS proxy request failed: ${response.status} via ${proxy}`);
+                        console.warn(lastError);
+                        continue;
+                    }
+                    return await response.text();
+                } catch (err) {
+                    lastError = err;
+                    console.warn('CORS proxy failed:', proxy, err);
+                }
+            }
+            throw lastError || new Error('All CORS proxies failed for browser fallback');
+        }
+
+        async function browserDuckDuckGoSearch(query) {
+            try {
+                const html = await fetchThroughCorsProxy(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const queryTokens = buildSearchTokens(query);
+                const anchors = Array.from(doc.querySelectorAll('a.result__a, a[data-testid="result-title-a"]'));
+                const results = [];
+                const patternKeyword = /(pattern|crochet|amigurumi|blanket|beanie|shawl|scarf|sweater)/i;
+
+                for (const anchor of anchors) {
+                    if (results.length >= 12) break;
+                    const href = anchor.getAttribute('href');
+                    const text = anchor.textContent.trim();
+                    if (!href || !text) continue;
+                    const normalized = normalizeDuckDuckGoLink(href) || href;
+                    if (!normalized) continue;
+                    if (normalized.includes('duckduckgo.com') || normalized.includes('google.com/search') || normalized.includes('bing.com/search')) continue;
+
+                    const combined = `${text} ${normalized}`.toLowerCase();
+                    const hasPatternKeyword = patternKeyword.test(combined);
+                    const hasQueryToken = queryTokens.some(tok => combined.includes(tok));
+                    if (!hasPatternKeyword && !hasQueryToken) continue;
+
+                    results.push({ title: text.replace(/\s+/g, ' ').trim(), url: normalized, site: 'DuckDuckGo' });
+                }
+
+                return results;
+            } catch (err) {
+                console.warn('Browser fallback search proxy failed:', err);
+                return [];
+            }
+        }
+
+        function renderDuckDuckGoSearchSuggestion(container, query) {
+            const searchUrl = `https://duckduckgo.com/?q=${encodeURIComponent(query)}`;
+            container.innerHTML = `
+                <div class="glass p-4 rounded-lg text-sm text-gray-300">
+                    <p class="font-semibold text-base text-white">Browser fallback unavailable</p>
+                    <p class="mt-2">Automatic search results could not be fetched because browser proxy services are failing.</p>
+                    <a href="${searchUrl}" target="_blank" rel="noopener noreferrer" class="mt-4 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Open DuckDuckGo search</a>
+                </div>
+            `;
+        }
+
+        function renderBrowserFallback(container, results) {
+            container.innerHTML = '';
+            if (!results.length) {
+                container.innerHTML = '<div class="glass p-4 text-sm text-gray-400">No live pattern results could be fetched via browser fallback.</div>';
+                return;
+            }
+            results.slice(0, 10).forEach(item => {
+                const resultCard = document.createElement('div');
+                resultCard.className = 'glass p-4 rounded-lg flex flex-col gap-3';
+                resultCard.innerHTML = `
+                    <div>
+                        <p class="font-semibold text-lg">${item.title}</p>
+                        <p class="text-xs text-gray-400">${item.site}</p>
+                    </div>
+                    <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Open pattern</a>
+                `;
+                container.appendChild(resultCard);
+            });
+        }
+
         let isSignUpMode = false;
 
         const weightLabels = [
@@ -591,15 +757,19 @@
             }
 
             const verificationCode = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+            const codeExpiresAt = Date.now() + 10 * 60 * 1000;
             userRegistry[user] = {
                 password: pass,
                 email,
                 verified: false,
                 verificationCode,
+                codeExpiresAt,
+                membership: false,
                 created: new Date().toISOString()
             };
             localStorage.setItem('yarnstash_global_registry', JSON.stringify(userRegistry));
-            localStorage.setItem('yarnstash_pending_verification', JSON.stringify({ user, email, verificationCode }));
+            localStorage.setItem('yarnstash_pending_verification', JSON.stringify({ user, email, verificationCode, codeExpiresAt, created: new Date().toISOString() }));
+            sessionStorage.setItem('yarnstash_verification_notice', JSON.stringify({ user, email, verificationCode, codeExpiresAt }));
             window.location.href = `verify.html?user=${encodeURIComponent(user)}&email=${encodeURIComponent(email)}`;
         }
 
@@ -635,12 +805,66 @@
             setTimeout(() => errorEl.classList.add('hidden'), 3000);
         }
 
+        function showWelcomeTutorial() {
+            if (localStorage.getItem('yarnstash_tutorial_seen') === '1') return;
+
+            const modal = document.getElementById('tutorial-modal');
+            const title = document.getElementById('tutorial-title');
+            const body = document.getElementById('tutorial-body');
+            const counter = document.getElementById('tutorial-counter');
+            const nextBtn = document.getElementById('tutorial-next');
+            const backBtn = document.getElementById('tutorial-back');
+            const closeBtn = document.getElementById('tutorial-close');
+
+            if (!modal || !title || !body || !counter || !nextBtn || !backBtn || !closeBtn) return;
+
+            const steps = [
+                { title: 'Welcome to your yarn studio', body: 'Use YarnStash to track every skein you own, note the weight, yardage, and color, and keep your collection tidy.' },
+                { title: 'Find project matches', body: 'Open a yarn card and use the pattern and match tools to discover new projects that fit your stash.' },
+                { title: 'Keep building your collection', body: 'Add more favorites over time and revisit the stash anytime to plan your next crochet or knitting project.' }
+            ];
+            let stepIndex = 0;
+
+            const renderStep = () => {
+                const step = steps[stepIndex];
+                title.innerText = step.title;
+                body.innerText = step.body;
+                counter.innerText = `${stepIndex + 1}/${steps.length}`;
+                backBtn.classList.toggle('hidden', stepIndex === 0);
+                nextBtn.innerText = stepIndex === steps.length - 1 ? 'Done' : 'Next';
+            };
+
+            const closeTutorial = () => {
+                modal.classList.add('hidden-section');
+                localStorage.setItem('yarnstash_tutorial_seen', '1');
+            };
+
+            nextBtn.onclick = () => {
+                if (stepIndex < steps.length - 1) {
+                    stepIndex += 1;
+                    renderStep();
+                } else {
+                    closeTutorial();
+                }
+            };
+            backBtn.onclick = () => {
+                if (stepIndex > 0) {
+                    stepIndex -= 1;
+                    renderStep();
+                }
+            };
+            closeBtn.onclick = closeTutorial;
+            modal.classList.remove('hidden-section');
+            renderStep();
+        }
+
         function loginSuccess() {
             localStorage.setItem('yarnstash_current_session', currentUser);
             document.getElementById('auth-section').classList.add('hidden-section');
             document.getElementById('app-main').classList.remove('hidden-section');
             document.getElementById('user-display').innerText = `Artist: ${currentUser}`;
             renderStash();
+            showWelcomeTutorial();
         }
 
         function handleLogout() {
@@ -709,6 +933,211 @@
                 grid.appendChild(card);
             });
             updateMatchDropdown();
+        }
+
+        function openBuyMePage() {
+            if (currentUser) {
+                activateMembershipForCurrentUser();
+            }
+            window.open('https://buymeacoffee.com/yarnstash', '_blank');
+        }
+
+        function activateMembershipForCurrentUser() {
+            try {
+                const userRegistry = JSON.parse(localStorage.getItem('yarnstash_global_registry')) || {};
+                if (currentUser && userRegistry[currentUser]) {
+                    userRegistry[currentUser].membership = true;
+                    localStorage.setItem('yarnstash_global_registry', JSON.stringify(userRegistry));
+                    showToast('Membership activated for your account.');
+                }
+            } catch (err) {
+                console.warn('Membership activation failed:', err);
+            }
+        }
+
+        function ensureMemberState() {
+            try {
+                const userRegistry = JSON.parse(localStorage.getItem('yarnstash_global_registry')) || {};
+                return currentUser && userRegistry[currentUser] && userRegistry[currentUser].membership;
+            } catch {
+                return false;
+            }
+        }
+
+        function openCommunity() {
+            const feed = document.getElementById('community-feed');
+            const gate = document.getElementById('community-gate');
+            if (!feed || !gate) return;
+
+            if (!currentUser) {
+                alert('Please log in or sign up to access the community.');
+                return;
+            }
+
+            if (!ensureMemberState()) {
+                feed.innerHTML = `
+                    <div class="glass p-6 rounded-3xl text-center text-gray-300">
+                        <p class="mb-4">This community is only accessible for members. Join via Buy Me a Coffee to unlock posts, follows, likes, and comments.</p>
+                        <button onclick="openBuyMePage()" class="btn-primary py-3 px-5 rounded-xl">Become a Member</button>
+                    </div>
+                `;
+                feed.classList.remove('hidden-section');
+                return;
+            }
+
+            gate.classList.add('hidden-section');
+            feed.classList.remove('hidden-section');
+            renderCommunityFeed();
+        }
+
+        function getCommunityPosts() {
+            try {
+                return JSON.parse(localStorage.getItem('yarnstash_community_posts')) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveCommunityPosts(posts) {
+            localStorage.setItem('yarnstash_community_posts', JSON.stringify(posts));
+        }
+
+        function getFollowing() {
+            try {
+                return JSON.parse(localStorage.getItem('yarnstash_following')) || {};
+            } catch {
+                return {};
+            }
+        }
+
+        function saveFollowing(data) {
+            localStorage.setItem('yarnstash_following', JSON.stringify(data));
+        }
+
+        function renderCommunityFeed() {
+            const feed = document.getElementById('community-feed');
+            if (!feed) return;
+
+            const posts = getCommunityPosts();
+            const following = getFollowing();
+            const currentFollows = following[currentUser] || [];
+
+            const createForm = `
+                <div class="glass p-6 rounded-3xl">
+                    <h3 class="text-xl font-semibold mb-3">Share your latest craft</h3>
+                    <textarea id="community-post-text" class="w-full min-h-[120px] p-4 rounded-2xl bg-[#f5eef7] text-[#4a3b32]" placeholder="Describe your project, materials, or inspiration..."></textarea>
+                    <button onclick="submitCommunityPost()" class="mt-4 btn-primary w-full py-3 rounded-xl">Post Craft</button>
+                </div>
+            `;
+
+            const postCards = posts.length === 0 ? `
+                <div class="glass p-6 rounded-3xl text-center text-gray-300">
+                    <p class="mb-2">No posts yet. Share the first project and inspire other fiber artists!</p>
+                </div>
+            ` : posts.map(post => {
+                const liked = post.likesBy?.includes(currentUser);
+                return `
+                    <div class="glass p-6 rounded-3xl">
+                        <div class="flex justify-between items-start gap-4 mb-4">
+                            <div>
+                                <p class="text-sm text-gray-400">${new Date(post.createdAt).toLocaleString()}</p>
+                                <h4 class="text-lg font-semibold">${post.author}</h4>
+                            </div>
+                            <button onclick="toggleFollow('${post.author}')" class="text-sm font-semibold ${currentFollows.includes(post.author) ? 'text-green-400' : 'text-gray-300'}">${post.author === currentUser ? 'You' : currentFollows.includes(post.author) ? 'Following' : 'Follow'}</button>
+                        </div>
+                        <p class="text-gray-300 mb-4">${post.content}</p>
+                        <div class="flex flex-wrap gap-3 items-center text-sm text-gray-400">
+                            <button onclick="toggleLike('${post.id}')" class="font-semibold ${liked ? 'text-pink-400' : 'text-gray-400'}">${liked ? '♥' : '♡'} ${post.likes || 0}</button>
+                            <button onclick="promptComment('${post.id}')" class="text-gray-400 underline decoration-dotted">Comment</button>
+                            <span>${post.comments?.length || 0} comment${(post.comments?.length || 0) === 1 ? '' : 's'}</span>
+                        </div>
+                        ${post.comments && post.comments.length ? `
+                            <div class="mt-4 space-y-3">
+                                ${post.comments.map(comment => `
+                                    <div class="rounded-2xl bg-[#f4eff3] p-3 text-sm text-[#4a3b32]">
+                                        <strong>${comment.user}</strong>: ${comment.text}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            feed.innerHTML = createForm + postCards;
+        }
+
+        function submitCommunityPost() {
+            const textarea = document.getElementById('community-post-text');
+            if (!textarea) return;
+            const content = textarea.value.trim();
+            if (!content) {
+                alert('Write a few words about your craft before posting.');
+                return;
+            }
+            const posts = getCommunityPosts();
+            posts.unshift({
+                id: `post-${Date.now()}`,
+                author: currentUser,
+                content,
+                likes: 0,
+                likesBy: [],
+                comments: [],
+                createdAt: Date.now()
+            });
+            saveCommunityPosts(posts);
+            textarea.value = '';
+            renderCommunityFeed();
+        }
+
+        function toggleLike(postId) {
+            const posts = getCommunityPosts();
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+            post.likesBy = post.likesBy || [];
+            if (post.likesBy.includes(currentUser)) {
+                post.likesBy = post.likesBy.filter(user => user !== currentUser);
+            } else {
+                post.likesBy.push(currentUser);
+            }
+            post.likes = post.likesBy.length;
+            saveCommunityPosts(posts);
+            renderCommunityFeed();
+        }
+
+        function promptComment(postId) {
+            const text = prompt('Leave a comment:');
+            if (!text || !text.trim()) return;
+            const posts = getCommunityPosts();
+            const post = posts.find(p => p.id === postId);
+            if (!post) return;
+            post.comments = post.comments || [];
+            post.comments.push({ user: currentUser, text: text.trim() });
+            saveCommunityPosts(posts);
+            renderCommunityFeed();
+        }
+
+        function toggleFollow(author) {
+            if (author === currentUser) return;
+            const following = getFollowing();
+            following[currentUser] = following[currentUser] || [];
+            if (following[currentUser].includes(author)) {
+                following[currentUser] = following[currentUser].filter(name => name !== author);
+            } else {
+                following[currentUser].push(author);
+            }
+            saveFollowing(following);
+            renderCommunityFeed();
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('success-toast');
+            if (!toast) return;
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 2200);
         }
 
         function deleteYarn(index) {
@@ -908,15 +1337,26 @@
             try {
                 const resp = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(query)}&site=all`);
                 if (!resp.ok) {
-                    container.innerHTML = '<div class="glass p-4 text-sm text-red-400"><p class="font-semibold">Yarniverse offline</p><p>The pattern search proxy is not running. Start it with: <code>cd scraper && npm start</code></p></div>';
-                    console.error('Scraper proxy not responding:', resp.status);
+                    console.warn('Local scraper proxy failed with status', resp.status);
+                    const fallbackResults = await browserDuckDuckGoSearch(query);
+                    if (fallbackResults.length) {
+                        renderBrowserFallback(container, fallbackResults);
+                    } else {
+                        renderDuckDuckGoSearchSuggestion(container, query);
+                    }
                     return;
                 }
+
                 const data = await resp.json();
                 container.innerHTML = '';
 
                 if (!data.ok || !data.results || data.results.length === 0) {
-                    container.innerHTML = '<div class="glass p-4 text-sm text-gray-400">No specific pattern results found for that query.</div>';
+                    const fallbackResults = await browserDuckDuckGoSearch(query);
+                    if (fallbackResults.length) {
+                        renderBrowserFallback(container, fallbackResults);
+                        return;
+                    }
+                    renderDuckDuckGoSearchSuggestion(container, query);
                     return;
                 }
 
@@ -934,7 +1374,16 @@
                 });
             } catch (err) {
                 console.error('Yarniverse search error:', err);
-                container.innerHTML = '<div class="glass p-4 text-sm text-red-400"><p class="font-semibold">Connection failed</p><p>Cannot reach Yarniverse proxy at ' + SCRAPER_API_BASE + '</p><p class="text-xs mt-2">Ensure the proxy is running: <code>cd scraper && npm start</code></p></div>';
+                try {
+                    const fallbackResults = await browserDuckDuckGoSearch(query);
+                    if (fallbackResults.length) {
+                        renderBrowserFallback(container, fallbackResults);
+                        return;
+                    }
+                } catch (fallbackError) {
+                    console.error('Browser fallback search failed:', fallbackError);
+                }
+                renderDuckDuckGoSearchSuggestion(container, query);
             }
         }
 
@@ -950,8 +1399,29 @@
             try {
                 const resp = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(query)}&site=all`);
                 if (!resp.ok) {
-                    patternLinks.innerHTML = '<div class="col-span-full text-center py-6 glass"><p class="font-semibold text-red-400">Yarniverse offline</p><p class="text-sm text-gray-400 mt-2">Start the proxy: <code>cd scraper && npm start</code></p></div>';
+                    console.warn('Local scraper proxy failed with status', resp.status);
+                    const fallbackResults = await browserDuckDuckGoSearch(query);
+                    if (fallbackResults.length) {
+                        patternLinks.innerHTML = '';
+                        fallbackResults.slice(0, 20).forEach(item => {
+                            const card = document.createElement('div');
+                            card.className = 'glass p-4 rounded-lg flex items-start justify-between';
+                            card.innerHTML = `
+                                <div class="pr-4">
+                                    <p class="font-semibold text-lg">${item.title}</p>
+                                    <p class="text-xs text-gray-400">${item.site}</p>
+                                </div>
+                                <div class="flex flex-col items-end gap-2">
+                                    <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-semibold">Visit link for pattern!</a>
+                                </div>
+                            `;
+                            patternLinks.appendChild(card);
+                        });
+                        document.getElementById('patterns-modal').classList.remove('hidden-section');
+                        return;
+                    }
                     console.error('Scraper proxy not responding:', resp.status);
+                    renderDuckDuckGoSearchSuggestion(patternLinks, query);
                     document.getElementById('patterns-modal').classList.remove('hidden-section');
                     return;
                 }
@@ -977,7 +1447,7 @@
                 }
             } catch (err) {
                 console.error('Pattern search error:', err);
-                patternLinks.innerHTML = '<div class="col-span-full text-center py-6 glass"><p class=\"font-semibold text-red-400\">Connection failed</p><p class=\"text-sm text-gray-400 mt-2\">Cannot reach Yarniverse proxy. Make sure it\'s running:</p><p class=\"text-xs mt-2\"><code>cd scraper && npm start</code></p></div>';
+                renderDuckDuckGoSearchSuggestion(patternLinks, query);
             }
 
             document.getElementById('patterns-modal').classList.remove('hidden-section');
@@ -1020,5 +1490,23 @@
         }
       })();
     </script>
+
+    <div id="tutorial-modal" class="hidden-section fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+        <div class="glass rounded-2xl p-6 max-w-md w-full">
+            <div class="flex justify-between items-start gap-4">
+                <div>
+                    <p class="text-sm text-[#EA85C7] font-semibold">New to YarnStash?</p>
+                    <h3 id="tutorial-title" class="text-xl font-semibold text-[#4a3b32]">Welcome tutorial</h3>
+                </div>
+                <button id="tutorial-close" class="text-gray-500 hover:text-gray-700 text-2xl" aria-label="Close tutorial">×</button>
+            </div>
+            <p id="tutorial-body" class="mt-4 text-sm text-gray-600 leading-6">Here is a quick beginner tour of your new yarn studio.</p>
+            <div class="mt-5 flex items-center justify-between text-sm text-gray-500">
+                <button id="tutorial-back" class="hidden hover:text-[#4a3b32]">Back</button>
+                <span id="tutorial-counter">1/3</span>
+                <button id="tutorial-next" class="bg-[#6e8e75] text-white px-4 py-2 rounded-lg">Next</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>
