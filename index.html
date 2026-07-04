@@ -316,17 +316,17 @@
 
             <section id="tab-community" class="tab-content hidden-section animate-fade">
                 <div class="mb-8">
-                    <h2 class="text-2xl font-semibold mb-2">Community</h2>
-                    <p class="text-gray-400">Share your newest makes, discover inspiration, and search for patterns together.</p>
+                    <h2 class="text-2xl font-semibold mb-2 text-[#2f211d]">Community</h2>
+                    <p class="text-[#5f483c]">Share your newest makes, discover inspiration, and search for patterns together.</p>
                 </div>
                 <div id="community-gate" class="glass p-6 rounded-3xl mb-6">
-                    <p class="text-gray-300 mb-4">This space is reserved for members only. Post your crafts, follow other makers, like posts, and leave comments.</p>
+                    <p class="text-[#2f211d] mb-4">This space is reserved for members only. Post your crafts, follow other makers, like posts, and leave comments.</p>
                     <button onclick="switchTab('community')" class="btn-primary w-full py-3 rounded-xl">Open Community</button>
                 </div>
                 <div class="glass p-6 rounded-3xl mb-6">
-                    <label class="block text-sm font-medium mb-3">Search community posts and patterns</label>
+                    <label class="block text-sm font-medium mb-3 text-[#2f211d]">Search community posts and patterns</label>
                     <div class="flex gap-2">
-                        <input id="community-search-input" type="text" placeholder="Try: shawl, blanket, amigurumi..." class="w-full p-3 rounded-xl">
+                        <input id="community-search-input" type="text" placeholder="Try: shawl, blanket, amigurumi..." class="w-full p-3 rounded-xl text-[#2f211d]">
                         <button onclick="searchCommunityPatterns()" class="btn-primary px-4 py-3 rounded-xl">Search</button>
                     </div>
                     <div id="community-search-results" class="mt-4 space-y-3"></div>
@@ -964,6 +964,8 @@
             updateMatchDropdown();
         }
 
+        let pendingCommunityImage = '';
+
         function openBuyMePage() {
             if (currentUser) {
                 activateMembershipForCurrentUser();
@@ -1050,6 +1052,38 @@
             localStorage.setItem('yarnstash_following', JSON.stringify(data));
         }
 
+        function handleCommunityImageFile(file, previewElement, urlInput) {
+            if (!file || !file.type.startsWith('image/')) {
+                showToast('Please choose a valid image file.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                pendingCommunityImage = reader.result;
+                if (previewElement) {
+                    previewElement.innerHTML = `<img src="${pendingCommunityImage}" alt="Community preview" class="w-full rounded-2xl object-cover max-h-48">`;
+                }
+                if (urlInput) {
+                    urlInput.value = '';
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleCommunityPaste(event) {
+            const clipboardItems = event.clipboardData?.items || [];
+            const imageItem = Array.from(clipboardItems).find(item => item.type.startsWith('image/'));
+            if (!imageItem) return;
+            event.preventDefault();
+            const file = imageItem.getAsFile();
+            if (file) {
+                const preview = document.getElementById('community-photo-preview');
+                const imageInput = document.getElementById('community-post-image');
+                handleCommunityImageFile(file, preview, imageInput);
+            }
+        }
+
         function renderCommunityFeed() {
             const feed = document.getElementById('community-feed');
             if (!feed) return;
@@ -1060,33 +1094,49 @@
 
             const createForm = `
                 <div class="glass p-6 rounded-3xl">
-                    <h3 class="text-xl font-semibold mb-3">Share your latest craft</h3>
-                    <textarea id="community-post-text" class="w-full min-h-[120px] p-4 rounded-2xl bg-[#f5eef7] text-[#4a3b32]" placeholder="Describe your project, materials, or inspiration..."></textarea>
-                    <input id="community-post-image" type="url" class="w-full mt-3 p-3 rounded-2xl bg-[#f5eef7] text-[#4a3b32]" placeholder="Paste an image URL (optional)">
+                    <h3 class="text-xl font-semibold mb-2 text-[#2f211d]">Share your latest craft</h3>
+                    <p class="text-sm text-[#6d5142] mb-4">Add a photo, paste one from your clipboard, or drop one into the box below.</p>
+                    <textarea id="community-post-text" class="w-full min-h-[120px] p-4 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Describe your project, materials, or inspiration..."></textarea>
+                    <input id="community-post-tags" type="text" class="w-full mt-3 p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Tags: shawl, blanket, crochet (optional)">
+                    <div id="community-photo-dropzone" class="mt-3 rounded-2xl border border-dashed border-[#b68ba6] bg-[#fcf7fb] p-3 text-sm text-[#5e4338]">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p class="font-semibold text-[#2f211d]">Photo options</p>
+                                <p class="text-xs mt-1 text-[#6d5142]">Upload a photo, drag and drop one here, or paste it from your clipboard.</p>
+                            </div>
+                            <label for="community-photo-file-input" class="btn-primary px-3 py-2 rounded-xl cursor-pointer">Upload</label>
+                        </div>
+                        <input id="community-photo-file-input" type="file" accept="image/*" capture="environment" class="hidden">
+                        <input id="community-post-image" type="url" class="w-full mt-3 p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Paste an image URL (optional)">
+                        <div id="community-photo-preview" class="mt-3"></div>
+                    </div>
                     <button onclick="submitCommunityPost()" class="mt-4 btn-primary w-full py-3 rounded-xl">Post Craft</button>
                 </div>
             `;
 
             const postCards = posts.length === 0 ? `
-                <div class="glass p-6 rounded-3xl text-center text-gray-300">
+                <div class="glass p-6 rounded-3xl text-center text-[#2f211d]">
                     <p class="mb-2">No posts yet. Share the first project and inspire other fiber artists!</p>
                 </div>
             ` : posts.map(post => {
                 const liked = post.likesBy?.includes(currentUser);
+                const media = post.imageData ? `<img src="${post.imageData}" alt="Craft photo" class="w-full rounded-2xl mb-4 object-cover max-h-80">` : post.imageUrl ? `<img src="${post.imageUrl}" alt="Craft photo" class="w-full rounded-2xl mb-4 object-cover max-h-80">` : '';
+                const tags = post.tags?.length ? `<div class="flex flex-wrap gap-2 mb-4">${post.tags.map(tag => `<span class="rounded-full bg-[#f5eef7] px-3 py-1 text-xs font-semibold text-[#7a4c54]">#${tag}</span>`).join('')}</div>` : '';
                 return `
                     <div class="glass p-6 rounded-3xl">
                         <div class="flex justify-between items-start gap-4 mb-4">
                             <div>
-                                <p class="text-sm text-gray-400">${new Date(post.createdAt).toLocaleString()}</p>
-                                <h4 class="text-lg font-semibold">${post.author}</h4>
+                                <p class="text-sm text-[#6d5142]">${new Date(post.createdAt).toLocaleString()}</p>
+                                <h4 class="text-lg font-semibold text-[#2f211d]">${post.author}</h4>
                             </div>
-                            <button onclick="toggleFollow('${post.author}')" class="text-sm font-semibold ${currentFollows.includes(post.author) ? 'text-green-400' : 'text-gray-300'}">${post.author === currentUser ? 'You' : currentFollows.includes(post.author) ? 'Following' : 'Follow'}</button>
+                            <button onclick="toggleFollow('${post.author}')" class="text-sm font-semibold ${currentFollows.includes(post.author) ? 'text-green-600' : 'text-[#5f483c]'}">${post.author === currentUser ? 'You' : currentFollows.includes(post.author) ? 'Following' : 'Follow'}</button>
                         </div>
-                        <p class="text-gray-300 mb-4">${post.content}</p>
-                        ${post.imageUrl ? `<img src="${post.imageUrl}" alt="Craft photo" class="w-full rounded-2xl mb-4 object-cover max-h-80">` : ''}
-                        <div class="flex flex-wrap gap-3 items-center text-sm text-gray-400">
-                            <button onclick="toggleLike('${post.id}')" class="font-semibold ${liked ? 'text-pink-400' : 'text-gray-400'}">${liked ? '♥' : '♡'} ${post.likes || 0}</button>
-                            <button onclick="promptComment('${post.id}')" class="text-gray-400 underline decoration-dotted">Comment</button>
+                        <p class="text-[#2f211d] mb-4">${post.content}</p>
+                        ${tags}
+                        ${media}
+                        <div class="flex flex-wrap gap-3 items-center text-sm text-[#5f483c]">
+                            <button onclick="toggleLike('${post.id}')" class="font-semibold ${liked ? 'text-pink-500' : 'text-[#5f483c]'}">${liked ? '♥' : '♡'} ${post.likes || 0}</button>
+                            <button onclick="promptComment('${post.id}')" class="text-[#5f483c] underline decoration-dotted">Comment</button>
                             <span>${post.comments?.length || 0} comment${(post.comments?.length || 0) === 1 ? '' : 's'}</span>
                         </div>
                         ${post.comments && post.comments.length ? `
@@ -1103,11 +1153,46 @@
             }).join('');
 
             feed.innerHTML = createForm + postCards;
+
+            const dropzone = document.getElementById('community-photo-dropzone');
+            const fileInput = document.getElementById('community-photo-file-input');
+            const preview = document.getElementById('community-photo-preview');
+            const imageInput = document.getElementById('community-post-image');
+            if (dropzone && fileInput && preview) {
+                const resetHighlight = () => {
+                    dropzone.classList.remove('border-[#a03a81]', 'bg-[#f6e7f2]');
+                };
+                dropzone.addEventListener('dragover', (event) => {
+                    event.preventDefault();
+                    dropzone.classList.add('border-[#a03a81]', 'bg-[#f6e7f2]');
+                });
+                dropzone.addEventListener('dragleave', () => resetHighlight());
+                dropzone.addEventListener('drop', (event) => {
+                    event.preventDefault();
+                    resetHighlight();
+                    const file = event.dataTransfer?.files?.[0];
+                    if (file) {
+                        handleCommunityImageFile(file, preview, imageInput);
+                    }
+                });
+                fileInput.addEventListener('change', (event) => {
+                    const file = event.target.files?.[0];
+                    if (file) {
+                        handleCommunityImageFile(file, preview, imageInput);
+                    }
+                });
+            }
+
+            const composer = document.getElementById('community-post-text');
+            if (composer) {
+                composer.addEventListener('paste', handleCommunityPaste);
+            }
         }
 
         function submitCommunityPost() {
             const textarea = document.getElementById('community-post-text');
             const imageInput = document.getElementById('community-post-image');
+            const tagsInput = document.getElementById('community-post-tags');
             if (!textarea) return;
             const content = textarea.value.trim();
             if (!content) {
@@ -1115,12 +1200,15 @@
                 return;
             }
             const imageUrl = imageInput ? imageInput.value.trim() : '';
+            const tags = tagsInput ? tagsInput.value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) : [];
             const posts = getCommunityPosts();
             posts.unshift({
                 id: `post-${Date.now()}`,
                 author: currentUser,
                 content,
                 imageUrl,
+                imageData: pendingCommunityImage || '',
+                tags,
                 likes: 0,
                 likesBy: [],
                 comments: [],
@@ -1129,6 +1217,10 @@
             saveCommunityPosts(posts);
             textarea.value = '';
             if (imageInput) imageInput.value = '';
+            if (tagsInput) tagsInput.value = '';
+            pendingCommunityImage = '';
+            const preview = document.getElementById('community-photo-preview');
+            if (preview) preview.innerHTML = '';
             renderCommunityFeed();
         }
 
@@ -1169,7 +1261,7 @@
             }
 
             const communityMatches = getCommunityPosts().filter(post => {
-                const haystack = `${post.author} ${post.content} ${post.imageUrl || ''}`.toLowerCase();
+                const haystack = `${post.author} ${post.content} ${post.imageUrl || ''} ${post.imageData || ''} ${(post.tags || []).join(' ')}`.toLowerCase();
                 return haystack.includes(query);
             });
             const patternMatches = curatedPatterns.filter(pattern => {
@@ -1178,9 +1270,9 @@
             });
 
             const communityMarkup = communityMatches.slice(0, 3).map(post => `
-                <div class="rounded-2xl bg-[#f5eef7] p-3 text-sm text-[#4a3b32]">
+                <div class="rounded-2xl bg-[#f5eef7] p-3 text-sm text-[#2f211d]">
                     <div class="font-semibold">${post.author}</div>
-                    <div class="text-xs text-gray-500 mt-1">${post.content}</div>
+                    <div class="text-xs text-[#6d5142] mt-1">${post.content}</div>
                 </div>
             `).join('');
 
