@@ -202,34 +202,35 @@
                     <h2 class="text-2xl font-semibold mb-6">Quick Log</h2>
                     <form id="log-form" class="space-y-6">
                         <div>
-                            <label class="block text-sm font-medium mb-2">Brand / Name</label>
-                            <input type="text" id="yarn-brand" placeholder="e.g. Malabrigo Rios" class="w-full p-3 rounded-xl" required>
+                            <label class="block text-sm font-medium mb-2">Brand / Name <span class="text-xs text-gray-400">(optional)</span></label>
+                            <input type="text" id="yarn-brand" placeholder="e.g. Malabrigo Rios" class="w-full p-3 rounded-xl">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium mb-2">Color</label>
+                                <label class="block text-sm font-medium mb-2">Color *</label>
                                 <input type="text" id="yarn-color" placeholder="e.g. Teal" class="w-full p-3 rounded-xl" required>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium mb-2">Yardage</label>
-                                <input type="number" id="yarn-yardage" placeholder="210" class="w-full p-3 rounded-xl" required>
+                                <label class="block text-sm font-medium mb-2">Yardage <span class="text-xs text-gray-400">(optional)</span></label>
+                                <input type="number" id="yarn-yardage" placeholder="210" class="w-full p-3 rounded-xl">
                             </div>
                         </div>
                         <div>
                             <label class="block text-sm font-medium mb-2 flex justify-between">
-                                <span>Yarn Weight</span>
+                                <span>Yarn Weight <span class="text-xs text-gray-400">(optional)</span></span>
                                 <span id="weight-val" class="text-[#FEF9FB]">Medium (4)</span>
                             </label>
                             <input type="range" id="yarn-weight" min="0" max="7" value="4" class="w-full accent-[#FEF9FB]">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-2">Recommended Hook</label>
-                            <select id="yarn-hook" class="w-full p-3 rounded-xl">
+                            <label class="block text-sm font-medium mb-2">Recommended Hook *</label>
+                            <select id="yarn-hook" class="w-full p-3 rounded-xl" required>
+                                <option value="" selected disabled>Select a hook size</option>
                                 <option value="2.25mm">2.25mm (B-1)</option>
                                 <option value="3.25mm">3.25mm (D-3)</option>
                                 <option value="3.5mm">3.5mm (E-4)</option>
                                 <option value="4.0mm">4.0mm (G-6)</option>
-                                <option value="5.0mm" selected>5.0mm (H-8)</option>
+                                <option value="5.0mm">5.0mm (H-8)</option>
                                 <option value="6.0mm">6.0mm (J-10)</option>
                                 <option value="8.0mm">8.0mm (L-11)</option>
                                 <option value="10.0mm">10.0mm (N/P-15)</option>
@@ -263,58 +264,72 @@
                 </div>
             </section>
 
-            <section id="support-memberships" class="glass p-6 rounded-3xl mt-12">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-semibold">Buy Me a Coffee Membership Perks</h2>
-                    <p class="text-gray-400">These perks are for supporters who subscribe through Buy Me a Coffee and pay for membership.</p>
+            <section id="tab-membership" class="tab-content hidden-section animate-fade">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-semibold mb-2">Membership</h2>
+                    <p class="text-gray-400">Support YarnStash and unlock the full maker community experience.</p>
                 </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="glass p-6 rounded-3xl">
-                        <h3 class="text-xl font-bold mb-3">Join the YarnStash Circle</h3>
-                        <p class="text-3xl font-bold mb-4">$9<span class="text-sm font-normal">/month</span></p>
-                        <p class="text-gray-300 mb-4">Ready to show off your latest masterpiece? Our community is a vibrant space where passionate fiber artists share their work, exchange tips, and inspire one another.</p>
-                        <ul class="text-gray-400 space-y-2 mb-6">
-                            <li>Support me on a monthly basis</li>
-                            <li>Unlock exclusive posts and messages</li>
-                            <li>Post in the community!</li>
-                        </ul>
-                        <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
+                <div class="glass p-6 rounded-3xl">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-semibold">Buy Me a Coffee Membership Perks</h2>
+                        <p class="text-gray-400">These perks are for supporters who subscribe through Buy Me a Coffee and pay for membership.</p>
                     </div>
-                    <div class="glass p-6 rounded-3xl">
-                        <h3 class="text-xl font-bold mb-3">The “Skein” Member</h3>
-                        <p class="text-sm text-gray-300 mb-2">Paid / Monthly</p>
-                        <p class="text-3xl font-bold mb-4">$15<span class="text-sm font-normal">/month</span></p>
-                        <p class="text-gray-300 mb-4">Access unlimited stash logging and photo uploads. Post your own projects to the community feed and participate in Stash Challenges.</p>
-                        <ul class="text-gray-400 space-y-2 mb-6">
-                            <li>Support me on a monthly basis</li>
-                            <li>Unlock exclusive posts and messages</li>
-                            <li>Ad-free experience</li>
-                        </ul>
-                        <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
-                    </div>
-                    <div class="glass p-6 rounded-3xl">
-                        <h3 class="text-xl font-bold mb-3">The “Artisan” Member</h3>
-                        <p class="text-sm text-gray-300 mb-2">Annual / Higher Tier</p>
-                        <p class="text-3xl font-bold mb-4">$19<span class="text-sm font-normal">/month</span></p>
-                        <p class="text-gray-300 mb-4">Priority access to new features like the Pattern Matcher, plus a digital Verified Maker badge and export tools for stash tracking.</p>
-                        <ul class="text-gray-400 space-y-2 mb-6">
-                            <li>Support me on a monthly basis</li>
-                            <li>Unlock exclusive posts and messages</li>
-                            <li>Export stash as PDF or CSV</li>
-                        </ul>
-                        <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="glass p-6 rounded-3xl">
+                            <h3 class="text-xl font-bold mb-3">Join the YarnStash Circle</h3>
+                            <p class="text-3xl font-bold mb-4">$9<span class="text-sm font-normal">/month</span></p>
+                            <p class="text-gray-300 mb-4">Ready to show off your latest masterpiece? Our community is a vibrant space where passionate fiber artists share their work, exchange tips, and inspire one another.</p>
+                            <ul class="text-gray-400 space-y-2 mb-6">
+                                <li>Support me on a monthly basis</li>
+                                <li>Unlock exclusive posts and messages</li>
+                                <li>Post in the community!</li>
+                            </ul>
+                            <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
+                        </div>
+                        <div class="glass p-6 rounded-3xl">
+                            <h3 class="text-xl font-bold mb-3">The “Skein” Member</h3>
+                            <p class="text-sm text-gray-300 mb-2">Paid / Monthly</p>
+                            <p class="text-3xl font-bold mb-4">$15<span class="text-sm font-normal">/month</span></p>
+                            <p class="text-gray-300 mb-4">Access unlimited stash logging and photo uploads. Post your own projects to the community feed and participate in Stash Challenges.</p>
+                            <ul class="text-gray-400 space-y-2 mb-6">
+                                <li>Support me on a monthly basis</li>
+                                <li>Unlock exclusive posts and messages</li>
+                                <li>Ad-free experience</li>
+                            </ul>
+                            <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
+                        </div>
+                        <div class="glass p-6 rounded-3xl">
+                            <h3 class="text-xl font-bold mb-3">The “Artisan” Member</h3>
+                            <p class="text-sm text-gray-300 mb-2">Annual / Higher Tier</p>
+                            <p class="text-3xl font-bold mb-4">$19<span class="text-sm font-normal">/month</span></p>
+                            <p class="text-gray-300 mb-4">Priority access to new features like the Pattern Matcher, plus a digital Verified Maker badge and export tools for stash tracking.</p>
+                            <ul class="text-gray-400 space-y-2 mb-6">
+                                <li>Support me on a monthly basis</li>
+                                <li>Unlock exclusive posts and messages</li>
+                                <li>Export stash as PDF or CSV</li>
+                            </ul>
+                            <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
+                        </div>
                     </div>
                 </div>
             </section>
 
-            <section id="community-section" class="glass p-6 rounded-3xl mt-12">
-                <div class="mb-6">
-                    <h2 class="text-2xl font-semibold">YarnStash Community</h2>
-                    <p class="text-gray-400">Community is a vibrant space where passionate fiber artists share their work, exchange tips, and inspire one another.</p>
+            <section id="tab-community" class="tab-content hidden-section animate-fade">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-semibold mb-2">Community</h2>
+                    <p class="text-gray-400">Share your newest makes, discover inspiration, and search for patterns together.</p>
                 </div>
                 <div id="community-gate" class="glass p-6 rounded-3xl mb-6">
                     <p class="text-gray-300 mb-4">This space is reserved for members only. Post your crafts, follow other makers, like posts, and leave comments.</p>
-                    <button onclick="openCommunity()" class="btn-primary w-full py-3 rounded-xl">Open Community</button>
+                    <button onclick="switchTab('community')" class="btn-primary w-full py-3 rounded-xl">Open Community</button>
+                </div>
+                <div class="glass p-6 rounded-3xl mb-6">
+                    <label class="block text-sm font-medium mb-3">Search community posts and patterns</label>
+                    <div class="flex gap-2">
+                        <input id="community-search-input" type="text" placeholder="Try: shawl, blanket, amigurumi..." class="w-full p-3 rounded-xl">
+                        <button onclick="searchCommunityPatterns()" class="btn-primary px-4 py-3 rounded-xl">Search</button>
+                    </div>
+                    <div id="community-search-results" class="mt-4 space-y-3"></div>
                 </div>
                 <div id="community-feed" class="hidden-section space-y-6"></div>
             </section>
@@ -377,6 +392,18 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
                 <span class="text-[10px] font-medium">MATCH</span>
+            </button>
+            <button onclick="switchTab('membership')" class="nav-item flex flex-col items-center gap-1" id="nav-membership">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3v1H8a2 2 0 00-2 2v3a2 2 0 002 2h8a2 2 0 002-2v-3a2 2 0 00-2-2h-1v-1c0-1.657-1.343-3-3-3z" />
+                </svg>
+                <span class="text-[10px] font-medium">MEMBERS</span>
+            </button>
+            <button onclick="switchTab('community')" class="nav-item flex flex-col items-center gap-1" id="nav-community">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span class="text-[10px] font-medium">COMMUNITY</span>
             </button>
         </nav>
 
@@ -513,7 +540,7 @@
             return [
                 yarn.brand,
                 yarn.color,
-                `${weightLabels[yarn.weight]}`,
+                yarn.weight !== null && yarn.weight !== undefined ? `${weightLabels[yarn.weight]}` : '',
                 yarn.hook ? `${yarn.hook}mm` : '',
                 yarn.yardage ? `${yarn.yardage} yards` : '',
                 'crochet pattern'
@@ -912,7 +939,7 @@
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-4">
                         <div class="w-10 h-10 rounded-full weight-badge flex items-center justify-center font-bold text-lg">
-                            ${yarn.weight}
+                            ${yarn.weight ?? '—'}
                         </div>
                         <button onclick="deleteYarn(${index})" class="text-gray-500 hover:text-red-400 transition-colors" aria-label="Delete yarn">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -920,8 +947,8 @@
                             </svg>
                         </button>
                     </div>
-                    <h3 class="text-xl font-bold mb-1">${yarn.brand}</h3>
-                    <p class="text-sm text-gray-400 mb-4">${yarn.color} • ${yarn.yardage} yds</p>
+                    <h3 class="text-xl font-bold mb-1">${yarn.brand || 'Untitled yarn'}</h3>
+                    <p class="text-sm text-gray-400 mb-4">${yarn.color}${yarn.yardage ? ` • ${yarn.yardage} yds` : ''}</p>
                     <div class="flex justify-between items-center mt-6">
                         <button onclick="toggleStatus(${index})" class="text-xs font-semibold px-3 py-1 rounded-full border ${yarn.status === 'Available' ? 'border-green-400 text-green-400' : 'border-yellow-400 text-yellow-400'}">
                             ${yarn.status}
@@ -969,26 +996,33 @@
         function openCommunity() {
             const feed = document.getElementById('community-feed');
             const gate = document.getElementById('community-gate');
+            const searchResults = document.getElementById('community-search-results');
             if (!feed || !gate) return;
 
             if (!currentUser) {
-                alert('Please log in or sign up to access the community.');
+                gate.classList.remove('hidden-section');
+                feed.classList.add('hidden-section');
+                if (searchResults) searchResults.innerHTML = '';
+                gate.innerHTML = `
+                    <p class="text-gray-300 mb-4">Please log in or sign up to access the community.</p>
+                    <button onclick="toggleAuthMode(); switchTab('community')" class="btn-primary w-full py-3 rounded-xl">Sign In</button>
+                `;
                 return;
             }
 
             if (!ensureMemberState()) {
-                feed.innerHTML = `
-                    <div class="glass p-6 rounded-3xl text-center text-gray-300">
-                        <p class="mb-4">This community is only accessible for members. Join via Buy Me a Coffee to unlock posts, follows, likes, and comments.</p>
-                        <button onclick="openBuyMePage()" class="btn-primary py-3 px-5 rounded-xl">Become a Member</button>
-                    </div>
+                gate.classList.remove('hidden-section');
+                feed.classList.add('hidden-section');
+                gate.innerHTML = `
+                    <p class="text-gray-300 mb-4">This community is only accessible for members. Join via Buy Me a Coffee to unlock posts, follows, likes, and comments.</p>
+                    <button onclick="openBuyMePage()" class="btn-primary w-full py-3 rounded-xl">Become a Member</button>
                 `;
-                feed.classList.remove('hidden-section');
                 return;
             }
 
             gate.classList.add('hidden-section');
             feed.classList.remove('hidden-section');
+            if (searchResults) searchResults.innerHTML = '';
             renderCommunityFeed();
         }
 
@@ -1020,7 +1054,7 @@
             const feed = document.getElementById('community-feed');
             if (!feed) return;
 
-            const posts = getCommunityPosts();
+            const posts = getCommunityPosts().sort((a, b) => b.createdAt - a.createdAt);
             const following = getFollowing();
             const currentFollows = following[currentUser] || [];
 
@@ -1028,6 +1062,7 @@
                 <div class="glass p-6 rounded-3xl">
                     <h3 class="text-xl font-semibold mb-3">Share your latest craft</h3>
                     <textarea id="community-post-text" class="w-full min-h-[120px] p-4 rounded-2xl bg-[#f5eef7] text-[#4a3b32]" placeholder="Describe your project, materials, or inspiration..."></textarea>
+                    <input id="community-post-image" type="url" class="w-full mt-3 p-3 rounded-2xl bg-[#f5eef7] text-[#4a3b32]" placeholder="Paste an image URL (optional)">
                     <button onclick="submitCommunityPost()" class="mt-4 btn-primary w-full py-3 rounded-xl">Post Craft</button>
                 </div>
             `;
@@ -1048,6 +1083,7 @@
                             <button onclick="toggleFollow('${post.author}')" class="text-sm font-semibold ${currentFollows.includes(post.author) ? 'text-green-400' : 'text-gray-300'}">${post.author === currentUser ? 'You' : currentFollows.includes(post.author) ? 'Following' : 'Follow'}</button>
                         </div>
                         <p class="text-gray-300 mb-4">${post.content}</p>
+                        ${post.imageUrl ? `<img src="${post.imageUrl}" alt="Craft photo" class="w-full rounded-2xl mb-4 object-cover max-h-80">` : ''}
                         <div class="flex flex-wrap gap-3 items-center text-sm text-gray-400">
                             <button onclick="toggleLike('${post.id}')" class="font-semibold ${liked ? 'text-pink-400' : 'text-gray-400'}">${liked ? '♥' : '♡'} ${post.likes || 0}</button>
                             <button onclick="promptComment('${post.id}')" class="text-gray-400 underline decoration-dotted">Comment</button>
@@ -1071,17 +1107,20 @@
 
         function submitCommunityPost() {
             const textarea = document.getElementById('community-post-text');
+            const imageInput = document.getElementById('community-post-image');
             if (!textarea) return;
             const content = textarea.value.trim();
             if (!content) {
                 alert('Write a few words about your craft before posting.');
                 return;
             }
+            const imageUrl = imageInput ? imageInput.value.trim() : '';
             const posts = getCommunityPosts();
             posts.unshift({
                 id: `post-${Date.now()}`,
                 author: currentUser,
                 content,
+                imageUrl,
                 likes: 0,
                 likesBy: [],
                 comments: [],
@@ -1089,6 +1128,7 @@
             });
             saveCommunityPosts(posts);
             textarea.value = '';
+            if (imageInput) imageInput.value = '';
             renderCommunityFeed();
         }
 
@@ -1117,6 +1157,46 @@
             post.comments.push({ user: currentUser, text: text.trim() });
             saveCommunityPosts(posts);
             renderCommunityFeed();
+        }
+
+        function searchCommunityPatterns() {
+            const query = document.getElementById('community-search-input').value.trim().toLowerCase();
+            const resultsBox = document.getElementById('community-search-results');
+            if (!resultsBox) return;
+            if (!query) {
+                resultsBox.innerHTML = '';
+                return;
+            }
+
+            const communityMatches = getCommunityPosts().filter(post => {
+                const haystack = `${post.author} ${post.content} ${post.imageUrl || ''}`.toLowerCase();
+                return haystack.includes(query);
+            });
+            const patternMatches = curatedPatterns.filter(pattern => {
+                const haystack = `${pattern.name} ${pattern.hook} ${pattern.steps.join(' ')} ${pattern.id}`.toLowerCase();
+                return haystack.includes(query);
+            });
+
+            const communityMarkup = communityMatches.slice(0, 3).map(post => `
+                <div class="rounded-2xl bg-[#f5eef7] p-3 text-sm text-[#4a3b32]">
+                    <div class="font-semibold">${post.author}</div>
+                    <div class="text-xs text-gray-500 mt-1">${post.content}</div>
+                </div>
+            `).join('');
+
+            const patternMarkup = patternMatches.slice(0, 3).map(pattern => `
+                <div class="rounded-2xl border border-white/10 p-3 text-sm text-gray-200">
+                    <div class="font-semibold">${pattern.name}</div>
+                    <div class="text-xs text-gray-400 mt-1">${pattern.hook} hook • ${pattern.yardage} yds</div>
+                </div>
+            `).join('');
+
+            resultsBox.innerHTML = `
+                <div class="space-y-2">
+                    ${communityMarkup || '<div class="text-sm text-gray-400">No community posts matched.</div>'}
+                    ${patternMarkup || '<div class="text-sm text-gray-400">No built-in patterns matched.</div>'}
+                </div>
+            `;
         }
 
         function toggleFollow(author) {
@@ -1159,8 +1239,13 @@
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden-section'));
             document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
-            document.getElementById(`tab-${tabId}`).classList.remove('hidden-section');
-            document.getElementById(`nav-${tabId}`).classList.add('active');
+            const tab = document.getElementById(`tab-${tabId}`);
+            if (tab) tab.classList.remove('hidden-section');
+            const nav = document.getElementById(`nav-${tabId}`);
+            if (nav) nav.classList.add('active');
+            if (tabId === 'community') {
+                openCommunity();
+            }
         }
 
         document.getElementById('yarn-weight').addEventListener('input', (e) => {
@@ -1169,12 +1254,22 @@
 
         document.getElementById('log-form').addEventListener('submit', (e) => {
             e.preventDefault();
+            const color = document.getElementById('yarn-color').value.trim();
+            const hook = document.getElementById('yarn-hook').value;
+
+            if (!color || !hook) {
+                showToast('Please add a color and hook size.');
+                return;
+            }
+
+            const yardageValue = document.getElementById('yarn-yardage').value;
+            const weightValue = document.getElementById('yarn-weight').value;
             const newYarn = {
-                brand: document.getElementById('yarn-brand').value,
-                color: document.getElementById('yarn-color').value,
-                yardage: parseInt(document.getElementById('yarn-yardage').value, 10),
-                weight: parseInt(document.getElementById('yarn-weight').value, 10),
-                hook: document.getElementById('yarn-hook').value,
+                brand: document.getElementById('yarn-brand').value.trim(),
+                color,
+                yardage: yardageValue ? parseInt(yardageValue, 10) : null,
+                weight: weightValue ? parseInt(weightValue, 10) : null,
+                hook,
                 status: 'Available'
             };
 
@@ -1202,7 +1297,7 @@
                 if (yarn.status === 'Available') {
                     const opt = document.createElement('option');
                     opt.value = idx;
-                    opt.innerText = `${yarn.brand} (${yarn.color}) - ${yarn.yardage}yds`;
+                    opt.innerText = `${yarn.brand || 'Untitled yarn'} (${yarn.color})${yarn.yardage ? ` - ${yarn.yardage}yds` : ''}`;
                     dropdown.appendChild(opt);
                 }
             });
@@ -1230,7 +1325,10 @@
             }
 
             const yarn = yarnStash[idx];
-            const compatible = curatedPatterns.filter(r => r.weight === yarn.weight && r.yardage <= yarn.yardage);
+            const compatible = curatedPatterns.filter(r => (
+                (yarn.weight === null || yarn.weight === undefined || r.weight === yarn.weight) &&
+                (yarn.yardage === null || yarn.yardage === undefined || r.yardage <= yarn.yardage)
+            ));
 
             if (compatible.length === 0) {
                 results.innerHTML = '<div class="col-span-full text-center py-10 glass">No patterns match this yardage/weight yet.</div>';
@@ -1250,7 +1348,7 @@
                         </div>
                         <div class="text-sm text-gray-400 mb-6 space-y-1">
                             <p>Requires: ${proj.yardage} yds</p>
-                            <p>Available: <span class="text-green-400">${yarn.yardage} yds</span></p>
+                            <p>Available: <span class="text-green-400">${yarn.yardage ? `${yarn.yardage} yds` : 'yardage not provided'}</span></p>
                         </div>
                         <button onclick="viewPattern('${proj.id}', ${idx})" class="mt-auto btn-primary py-2 rounded-lg text-sm font-semibold">Start Project</button>
                     `;
@@ -1270,7 +1368,7 @@
                         <p class="text-xs text-gray-400">Unified pattern results from across the yarn universe</p>
                     </div>
                 </div>
-                <p class="text-sm text-gray-300 mb-4">Searching the Yarniverse for patterns matching <span class="font-semibold">${yarn.brand}</span> in <span class="font-semibold">${yarn.color}</span> (Weight ${yarn.weight})</p>
+                <p class="text-sm text-gray-300 mb-4">Searching the Yarniverse for patterns matching <span class="font-semibold">${yarn.brand || 'your yarn'}</span> in <span class="font-semibold">${yarn.color}</span>${yarn.weight !== null && yarn.weight !== undefined ? ` (Weight ${yarn.weight})` : ''}</p>
                 <p class="text-xs text-gray-400 mt-3">Query: ${yarnQuery}</p>
                 <div id="yarniverse-results-${idx}" class="mt-4 space-y-3">Loading pattern results...</div>
             `;
