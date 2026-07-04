@@ -330,6 +330,14 @@
                 </div>
                 <div id="community-feed" class="hidden-section space-y-6"></div>
             </section>
+
+            <section id="tab-profile" class="tab-content hidden-section animate-fade">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-semibold mb-2 text-[#2f211d]">Profiles</h2>
+                    <p class="text-[#5f483c]">Create a profile for your maker identity and visit other makers' spaces.</p>
+                </div>
+                <div id="profile-content" class="space-y-6"></div>
+            </section>
         </main>
 
         <div id="pattern-modal" class="fixed inset-0 z-[100] hidden-section flex items-center justify-center p-4">
@@ -402,6 +410,12 @@
                 </svg>
                 <span class="text-[10px] font-medium">COMMUNITY</span>
             </button>
+            <button onclick="switchTab('profile')" class="nav-item flex flex-col items-center gap-1" id="nav-profile">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                <span class="text-[10px] font-medium">PROFILE</span>
+            </button>
         </nav>
 
         <footer class="mt-12 mb-20 flex justify-center">
@@ -421,6 +435,7 @@
         ];
         let currentUser = null;
         let yarnStash = [];
+        let selectedProfileUser = null;
 
         function normalizeDuckDuckGoLink(href) {
             try {
@@ -791,6 +806,12 @@
                 verificationCode,
                 codeExpiresAt,
                 membership: false,
+                displayName: user,
+                bio: '',
+                location: '',
+                favoriteFiber: '',
+                website: '',
+                avatarUrl: '',
                 created: new Date().toISOString()
             };
             localStorage.setItem('yarnstash_global_registry', JSON.stringify(userRegistry));
@@ -886,10 +907,12 @@
 
         function loginSuccess() {
             localStorage.setItem('yarnstash_current_session', currentUser);
+            selectedProfileUser = currentUser;
             document.getElementById('auth-section').classList.add('hidden-section');
             document.getElementById('app-main').classList.remove('hidden-section');
             document.getElementById('user-display').innerText = `Artist: ${currentUser}`;
             renderStash();
+            renderProfileTab();
             showWelcomeTutorial();
         }
 
@@ -897,6 +920,7 @@
             saveData();
             localStorage.removeItem('yarnstash_current_session');
             currentUser = null;
+            selectedProfileUser = null;
             yarnStash = [];
             document.getElementById('auth-section').classList.remove('hidden-section');
             document.getElementById('app-main').classList.add('hidden-section');
@@ -914,6 +938,147 @@
         function loadData() {
             const stored = localStorage.getItem(`yarnStash_${currentUser}`);
             yarnStash = stored ? JSON.parse(stored) : [];
+        }
+
+        function getUserRegistry() {
+            try {
+                return JSON.parse(localStorage.getItem('yarnstash_global_registry')) || {};
+            } catch {
+                return {};
+            }
+        }
+
+        function saveUserRegistry(userRegistry) {
+            localStorage.setItem('yarnstash_global_registry', JSON.stringify(userRegistry));
+        }
+
+        function getProfileData(username) {
+            const registry = getUserRegistry();
+            const data = registry[username] || {};
+            return {
+                displayName: data.displayName || username || '',
+                bio: data.bio || '',
+                location: data.location || '',
+                favoriteFiber: data.favoriteFiber || '',
+                website: data.website || '',
+                avatarUrl: data.avatarUrl || ''
+            };
+        }
+
+        function saveProfile() {
+            if (!currentUser) return;
+            const registry = getUserRegistry();
+            registry[currentUser] = {
+                ...(registry[currentUser] || {}),
+                displayName: document.getElementById('profile-display-name').value.trim() || currentUser,
+                bio: document.getElementById('profile-bio').value.trim(),
+                location: document.getElementById('profile-location').value.trim(),
+                favoriteFiber: document.getElementById('profile-favorite-fiber').value.trim(),
+                website: document.getElementById('profile-website').value.trim(),
+                avatarUrl: document.getElementById('profile-avatar-url').value.trim()
+            };
+            saveUserRegistry(registry);
+            selectedProfileUser = currentUser;
+            renderProfileTab();
+            showToast('Profile updated.');
+        }
+
+        function viewProfile(username) {
+            selectedProfileUser = username;
+            switchTab('profile');
+        }
+
+        function renderProfileTab() {
+            const container = document.getElementById('profile-content');
+            if (!container) return;
+
+            if (!currentUser) {
+                container.innerHTML = `
+                    <div class="glass p-6 rounded-3xl text-center text-[#2f211d]">
+                        <p class="mb-3">Sign in to create your profile and discover other makers.</p>
+                        <button onclick="toggleAuthMode()" class="btn-primary px-4 py-2 rounded-xl">Go to sign in</button>
+                    </div>
+                `;
+                return;
+            }
+
+            const targetUser = selectedProfileUser || currentUser;
+            const profile = getProfileData(targetUser);
+            const isOwnProfile = targetUser === currentUser;
+            const registry = getUserRegistry();
+            const otherUsers = Object.keys(registry).filter(user => user !== targetUser).sort();
+            const recentPosts = getCommunityPosts().filter(post => post.author === targetUser).slice(0, 3);
+            const profileAvatar = profile.avatarUrl
+                ? `<img src="${profile.avatarUrl}" alt="${targetUser} avatar" class="w-16 h-16 rounded-full object-cover border-2 border-[#A03A81]">`
+                : `<div class="w-16 h-16 rounded-full bg-[#A03A81] flex items-center justify-center text-white text-xl font-semibold">${targetUser.charAt(0).toUpperCase()}</div>`;
+
+            container.innerHTML = `
+                <div class="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+                    <div class="glass p-6 rounded-3xl">
+                        <div class="flex flex-wrap items-center gap-4 mb-4">
+                            ${profileAvatar}
+                            <div>
+                                <h3 class="text-xl font-semibold text-[#2f211d]">${profile.displayName || targetUser}</h3>
+                                <p class="text-sm text-[#6d5142]">@${targetUser}</p>
+                                <p class="text-sm text-[#6d5142]">${profile.location || 'Location not shared yet'}</p>
+                            </div>
+                        </div>
+                        <p class="text-[#2f211d] leading-7">${profile.bio || (isOwnProfile ? 'Tell people what inspires your makes.' : 'No bio yet.')}</p>
+                        <div class="mt-4 flex flex-wrap gap-2">
+                            ${profile.favoriteFiber ? `<span class="rounded-full bg-[#f5eef7] px-3 py-1 text-sm text-[#7a4c54]">Favorite fiber: ${profile.favoriteFiber}</span>` : ''}
+                            ${profile.website ? `<a href="${profile.website}" target="_blank" rel="noopener noreferrer" class="rounded-full bg-[#eef7f0] px-3 py-1 text-sm text-[#3f6344]">Website</a>` : ''}
+                        </div>
+                        <div class="mt-5 text-sm text-[#6d5142]">
+                            <p>${recentPosts.length ? `${recentPosts.length} recent community post${recentPosts.length === 1 ? '' : 's'}` : 'No community posts yet'}</p>
+                        </div>
+                    </div>
+                    <div class="glass p-6 rounded-3xl">
+                        <h3 class="text-lg font-semibold text-[#2f211d] mb-4">${isOwnProfile ? 'Edit your profile' : 'Profile details'}</h3>
+                        ${isOwnProfile ? `
+                            <form onsubmit="event.preventDefault(); saveProfile();" class="space-y-3">
+                                <input id="profile-display-name" type="text" value="${profile.displayName || targetUser}" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d]" placeholder="Display name">
+                                <textarea id="profile-bio" class="w-full min-h-[100px] p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d]" placeholder="Tell people about your style and favorite makes">${profile.bio}</textarea>
+                                <input id="profile-location" type="text" value="${profile.location}" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d]" placeholder="Location">
+                                <input id="profile-favorite-fiber" type="text" value="${profile.favoriteFiber}" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d]" placeholder="Favorite fiber or yarn type">
+                                <input id="profile-website" type="text" value="${profile.website}" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d]" placeholder="Website or social link">
+                                <input id="profile-avatar-url" type="url" value="${profile.avatarUrl}" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d]" placeholder="Avatar image URL (optional)">
+                                <button class="btn-primary w-full py-3 rounded-xl">Save profile</button>
+                            </form>
+                        ` : `
+                            <div class="space-y-3 text-[#2f211d]">
+                                <p><strong>Location:</strong> ${profile.location || 'Not shared'}</p>
+                                <p><strong>Favorite fiber:</strong> ${profile.favoriteFiber || 'Not shared'}</p>
+                                <p><strong>Website:</strong> ${profile.website ? `<a href="${profile.website}" target="_blank" rel="noopener noreferrer" class="text-[#A03A81] underline">${profile.website}</a>` : 'Not shared'}</p>
+                            </div>
+                        `}
+                    </div>
+                </div>
+
+                <div class="glass p-6 rounded-3xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-[#2f211d]">Discover other makers</h3>
+                        <span class="text-sm text-[#6d5142]">${otherUsers.length} member${otherUsers.length === 1 ? '' : 's'}</span>
+                    </div>
+                    <div class="grid gap-3 md:grid-cols-2">
+                        ${otherUsers.length ? otherUsers.map(user => {
+                            const otherProfile = getProfileData(user);
+                            return `
+                                <div class="rounded-2xl border border-[#eadfe8] p-4 bg-[#fcf8fb]">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        ${otherProfile.avatarUrl ? `<img src="${otherProfile.avatarUrl}" alt="${user} avatar" class="w-10 h-10 rounded-full object-cover">` : `<div class="w-10 h-10 rounded-full bg-[#A03A81] flex items-center justify-center text-white text-sm font-semibold">${user.charAt(0).toUpperCase()}</div>`}
+                                        <div>
+                                            <p class="font-semibold text-[#2f211d]">${otherProfile.displayName || user}</p>
+                                            <p class="text-xs text-[#6d5142]">@${user}</p>
+                                        </div>
+                                    </div>
+                                    <p class="text-sm text-[#5f483c] mb-3">${otherProfile.bio || 'No bio yet.'}</p>
+                                    <button onclick="viewProfile('${user}')" class="btn-primary px-3 py-2 rounded-xl text-sm">View profile</button>
+                                </div>
+                            `;
+                        }).join('') : '<p class="text-[#6d5142]">No other members yet.</p>'}
+                    </div>
+                </div>
+            `;
         }
 
         function renderStash() {
@@ -1134,6 +1299,7 @@
                         <div class="flex flex-wrap gap-3 items-center text-sm text-[#5f483c]">
                             <button onclick="toggleLike('${post.id}')" class="font-semibold ${liked ? 'text-pink-500' : 'text-[#5f483c]'}">${liked ? '♥' : '♡'} ${post.likes || 0}</button>
                             <button onclick="promptComment('${post.id}')" class="text-[#5f483c] underline decoration-dotted">Comment</button>
+                            <button onclick="viewProfile('${post.author}')" class="text-[#5f483c] underline decoration-dotted">View profile</button>
                             <span>${post.comments?.length || 0} comment${(post.comments?.length || 0) === 1 ? '' : 's'}</span>
                         </div>
                         ${post.comments && post.comments.length ? `
@@ -1334,6 +1500,9 @@
             if (nav) nav.classList.add('active');
             if (tabId === 'community') {
                 openCommunity();
+            }
+            if (tabId === 'profile') {
+                renderProfileTab();
             }
         }
 
