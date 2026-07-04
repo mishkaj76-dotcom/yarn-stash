@@ -188,6 +188,7 @@
                     </div>
                 </div>
 
+                <div id="saved-product-banner" class="mb-4 hidden-section"></div>
                 <div id="yarn-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
                 <div id="empty-state" class="hidden-section text-center py-20 glass rounded-3xl mt-10">
@@ -436,6 +437,40 @@
         let currentUser = null;
         let yarnStash = [];
         let selectedProfileUser = null;
+
+        function setCookie(name, value, days = 30) {
+            const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
+            document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+            try {
+                localStorage.setItem(`yarnstash_cookie_${name}`, value);
+            } catch {}
+        }
+
+        function getCookie(name) {
+            const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+            if (match) {
+                return decodeURIComponent(match[1]);
+            }
+            try {
+                return localStorage.getItem(`yarnstash_cookie_${name}`) || '';
+            } catch {
+                return '';
+            }
+        }
+
+        function saveProductPreference(productName) {
+            if (!productName) return;
+            setCookie('yarnstash_last_product', productName.trim(), 30);
+        }
+
+        function getSavedProductPreference() {
+            return getCookie('yarnstash_last_product') || '';
+        }
+
+        window.setCookie = setCookie;
+        window.getCookie = getCookie;
+        window.saveProductPreference = saveProductPreference;
+        window.getSavedProductPreference = getSavedProductPreference;
 
         function normalizeDuckDuckGoLink(href) {
             try {
@@ -1127,8 +1162,28 @@
             const grid = document.getElementById('yarn-grid');
             const empty = document.getElementById('empty-state');
             const count = document.getElementById('stash-count');
+            const savedBanner = document.getElementById('saved-product-banner');
+            const rememberedProduct = getSavedProductPreference();
             grid.innerHTML = '';
             count.innerText = `${yarnStash.length} item${yarnStash.length !== 1 ? 's' : ''}`;
+
+            if (savedBanner) {
+                if (rememberedProduct) {
+                    savedBanner.innerHTML = `
+                        <div class="glass p-4 rounded-2xl flex items-center justify-between gap-3">
+                            <div>
+                                <p class="text-sm font-semibold text-[#2f211d]">Quick find</p>
+                                <p class="text-sm text-[#5f483c]">${rememberedProduct}</p>
+                            </div>
+                            <button onclick="switchTab('match')" class="btn-primary px-3 py-2 rounded-xl text-sm">Open</button>
+                        </div>
+                    `;
+                    savedBanner.classList.remove('hidden-section');
+                } else {
+                    savedBanner.innerHTML = '';
+                    savedBanner.classList.add('hidden-section');
+                }
+            }
 
             if (yarnStash.length === 0) {
                 empty.classList.remove('hidden-section');
@@ -1573,6 +1628,8 @@
                 status: 'Available'
             };
 
+            const productLabel = [newYarn.brand, newYarn.color].filter(Boolean).join(' • ') || 'Your yarn';
+            saveProductPreference(productLabel);
             yarnStash.push(newYarn);
             saveData();
 
@@ -1604,6 +1661,9 @@
         }
 
         function findMatchForYarn(idx) {
+            const yarn = yarnStash[idx];
+            const productLabel = [yarn?.brand, yarn?.color].filter(Boolean).join(' • ') || 'Your yarn';
+            saveProductPreference(productLabel);
             switchTab('match');
             document.getElementById('match-yarn-dropdown').value = idx;
             filterProjects();
