@@ -467,6 +467,13 @@
             return getCookie('yarnstash_last_product') || '';
         }
 
+        function clearSavedProductPreference() {
+            setCookie('yarnstash_last_product', '', -1);
+            try {
+                localStorage.removeItem('yarnstash_cookie_yarnstash_last_product');
+            } catch {}
+        }
+
         window.setCookie = setCookie;
         window.getCookie = getCookie;
         window.saveProductPreference = saveProductPreference;
@@ -1503,12 +1510,6 @@
             } else {
                 post.likesBy.push(currentUser);
             }
-        function clearSavedProductPreference() {
-            setCookie('yarnstash_last_product', '', -1);
-            try {
-                localStorage.removeItem('yarnstash_cookie_yarnstash_last_product');
-            } catch {}
-        }
             post.likes = post.likesBy.length;
             saveCommunityPosts(posts);
             renderCommunityFeed();
@@ -1522,16 +1523,6 @@
             if (!post) return;
             post.comments = post.comments || [];
             post.comments.push({ user: currentUser, text: text.trim() });
-                        <div class="glass p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3">
-                            <div>
-                                <p class="text-xs text-[#6d5142]">Quick find</p>
-                                <p class="text-sm font-semibold text-[#2f211d]">Last product: ${rememberedProduct}</p>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="findRememberedProduct()" class="btn-primary px-3 py-2 rounded-xl text-sm">Find Product</button>
-                                <button onclick="dismissRememberedProduct()" class="px-3 py-2 rounded-xl text-sm bg-white/60 text-[#5f483c]">Clear</button>
-                            </div>
-                        </div>
             saveCommunityPosts(posts);
             renderCommunityFeed();
         }
