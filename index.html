@@ -117,16 +117,28 @@
     </style>
 </head>
 <body>
-    <div style="text-align: center; padding: 10px 0; width: 100%;">
-        <ins class="adsbygoogle"
+    <div id="ads-top-container" style="text-align: center; padding: 10px 0; width: 100%;" class="hidden-section">
+        <ins id="ads-top-slot" class="adsbygoogle"
              style="display:block"
              data-ad-client="ca-pub-4904074139093620"
              data-ad-slot="67890"
              data-ad-format="auto"></ins>
-        <script>
-             (adsbygoogle = window.adsbygoogle || []).push({});
-        </script>
     </div>
+
+    <div id="cookie-consent-banner" class="hidden-section fixed bottom-6 left-1/2 -translate-x-1/2 z-[200] w-[min(92vw,760px)] glass p-4 rounded-2xl">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+                <p class="font-semibold text-[#2f211d]">Cookie Permission</p>
+                <p class="text-sm text-[#5f483c]">YarnStash uses essential cookies for login plus optional ad cookies to show ads from Google AdSense.</p>
+            </div>
+            <div class="flex gap-2">
+                <button id="cookie-reject-btn" class="px-3 py-2 rounded-xl bg-white/70 text-[#5f483c] text-sm">Essential Only</button>
+                <button id="cookie-accept-btn" class="btn-primary px-3 py-2 rounded-xl text-sm">Accept All</button>
+            </div>
+        </div>
+    </div>
+
+    <button id="cookie-settings-btn" class="hidden-section fixed bottom-6 right-6 z-[180] px-3 py-2 rounded-xl bg-white/80 text-[#5f483c] text-xs font-semibold">Cookie Settings</button>
 
     <!-- Authentication View -->
     <div id="auth-section" class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#F6C9B4]">
@@ -424,6 +436,8 @@
 
     <script>
         const SCRAPER_API_BASE = 'http://localhost:3000';
+        const ADSENSE_CLIENT = 'ca-pub-4904074139093620';
+        const CONSENT_STORAGE_KEY = 'yarnstash_cookie_consent';
         const CORS_PROXY_SERVICES = [
             'https://api.allorigins.win/raw?url=',
             'https://api.codetabs.com/v1/proxy?quest=',
@@ -432,6 +446,102 @@
         let currentUser = null;
         let yarnStash = [];
         let selectedProfileUser = null;
+
+        function readConsentChoice() {
+            try {
+                return localStorage.getItem(CONSENT_STORAGE_KEY) || '';
+            } catch {
+                return '';
+            }
+        }
+
+        function writeConsentChoice(value) {
+            try {
+                localStorage.setItem(CONSENT_STORAGE_KEY, value);
+            } catch {}
+
+            const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+            document.cookie = `yarnstash_consent=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+        }
+
+        function updateCookieUi() {
+            const consent = readConsentChoice();
+            const banner = document.getElementById('cookie-consent-banner');
+            const settings = document.getElementById('cookie-settings-btn');
+            const adsContainer = document.getElementById('ads-top-container');
+            if (!banner || !settings || !adsContainer) return;
+
+            banner.classList.toggle('hidden-section', !!consent);
+            settings.classList.toggle('hidden-section', !consent);
+            adsContainer.classList.toggle('hidden-section', consent !== 'all');
+        }
+
+        function pushTopAdSlot() {
+            const slot = document.getElementById('ads-top-slot');
+            if (!slot || slot.dataset.loaded === '1') return;
+            try {
+                (window.adsbygoogle = window.adsbygoogle || []).push({});
+                slot.dataset.loaded = '1';
+            } catch (err) {
+                console.warn('Ad slot initialization failed:', err);
+            }
+        }
+
+        function loadAdsFromConsent() {
+            const consent = readConsentChoice();
+            if (consent !== 'all') {
+                updateCookieUi();
+                return;
+            }
+
+            updateCookieUi();
+            const existingAdScript = document.querySelector('script[src*="pagead2.googlesyndication.com/pagead/js/adsbygoogle.js"]');
+            if (existingAdScript) {
+                window.__yarnstashAdsLoaded = true;
+            }
+            if (window.__yarnstashAdsLoaded) {
+                pushTopAdSlot();
+                return;
+            }
+
+            const script = document.createElement('script');
+            script.async = true;
+            script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
+            script.crossOrigin = 'anonymous';
+            script.onload = () => {
+                window.__yarnstashAdsLoaded = true;
+                pushTopAdSlot();
+            };
+            script.onerror = () => {
+                console.warn('AdSense script failed to load.');
+            };
+            document.head.appendChild(script);
+        }
+
+        function initCookieConsentControls() {
+            const acceptBtn = document.getElementById('cookie-accept-btn');
+            const rejectBtn = document.getElementById('cookie-reject-btn');
+            const settingsBtn = document.getElementById('cookie-settings-btn');
+            const banner = document.getElementById('cookie-consent-banner');
+            if (!acceptBtn || !rejectBtn || !settingsBtn || !banner) return;
+
+            acceptBtn.addEventListener('click', () => {
+                writeConsentChoice('all');
+                loadAdsFromConsent();
+            });
+
+            rejectBtn.addEventListener('click', () => {
+                writeConsentChoice('essential');
+                updateCookieUi();
+            });
+
+            settingsBtn.addEventListener('click', () => {
+                banner.classList.remove('hidden-section');
+            });
+
+            updateCookieUi();
+            loadAdsFromConsent();
+        }
 
         function setCookie(name, value, days = 30) {
             const expires = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toUTCString();
@@ -2002,6 +2112,7 @@
         }
 
         window.onload = () => {
+            initCookieConsentControls();
             const savedSession = localStorage.getItem('yarnstash_current_session');
             if (savedSession) {
                 currentUser = savedSession;
