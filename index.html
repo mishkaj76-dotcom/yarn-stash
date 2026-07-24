@@ -306,6 +306,7 @@
                             <ul class="text-gray-400 space-y-2 mb-6">
                                 <li>Unlimited stash logging and photo uploads</li>
                                 <li>Post your own projects to community feed</li>
+                                <li>Create stash challenges for followers</li>
                                 <li>Participate in Stash Challenges</li>
                                 <li>Unlock exclusive posts and messages</li>
                                 <li>Ad-free experience</li>
@@ -627,6 +628,37 @@
             throw lastError || new Error('All CORS proxies failed for browser fallback');
         }
 
+        async function searchBingResults(query) {
+            try {
+                const bingUrl = `https://www.bing.com/search?q=${encodeURIComponent(query)}`;
+                const html = await fetchThroughCorsProxy(bingUrl);
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const results = [];
+                const queryTokens = buildSearchTokens(query);
+                const patternKeyword = /(pattern|crochet|amigurumi|blanket|beanie|shawl|scarf|sweater|knit)/i;
+                
+                const links = Array.from(doc.querySelectorAll('h2 a, a.result__a'));
+                for (const link of links) {
+                    if (results.length >= 8) break;
+                    const href = link.getAttribute('href');
+                    const text = link.textContent.trim();
+                    if (!href || !text || href.length < 5) continue;
+                    if (href.includes('bing.com') || href.includes('microsoft.com')) continue;
+                    
+                    const combined = `${text} ${href}`.toLowerCase();
+                    const hasPatternKeyword = patternKeyword.test(combined);
+                    const hasQueryToken = queryTokens.some(tok => combined.includes(tok));
+                    if (!hasPatternKeyword && !hasQueryToken) continue;
+                    
+                    results.push({ title: text.substring(0, 80), url: href, site: 'Bing' });
+                }
+                return results;
+            } catch (err) {
+                console.warn('Bing search failed:', err);
+                return [];
+            }
+        }
+
         async function browserDuckDuckGoSearch(query) {
             try {
                 const html = await fetchThroughCorsProxy(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`);
@@ -634,7 +666,7 @@
                 const queryTokens = buildSearchTokens(query);
                 const anchors = Array.from(doc.querySelectorAll('a.result__a, a[data-testid="result-title-a"]'));
                 const results = [];
-                const patternKeyword = /(pattern|crochet|amigurumi|blanket|beanie|shawl|scarf|sweater)/i;
+                const patternKeyword = /(pattern|crochet|amigurumi|blanket|beanie|shawl|scarf|sweater|knit)/i;
 
                 for (const anchor of anchors) {
                     if (results.length >= 12) break;
@@ -655,7 +687,31 @@
 
                 return results;
             } catch (err) {
-                console.warn('Browser fallback search proxy failed:', err);
+                console.warn('DuckDuckGo search failed:', err);
+                return [];
+            }
+        }
+
+        async function searchMultipleSources(query) {
+            console.log('Searching multiple sources for:', query);
+            try {
+                const [ddgResults, bingResults] = await Promise.all([
+                    browserDuckDuckGoSearch(query),
+                    searchBingResults(query)
+                ]);
+                
+                const combined = [...ddgResults, ...bingResults];
+                const seen = new Set();
+                const unique = combined.filter(result => {
+                    const normalized = result.url.toLowerCase();
+                    if (seen.has(normalized)) return false;
+                    seen.add(normalized);
+                    return true;
+                });
+                
+                return unique.slice(0, 20);
+            } catch (err) {
+                console.error('Multi-source search failed:', err);
                 return [];
             }
         }
@@ -1461,6 +1517,88 @@
             localStorage.setItem('yarnstash_following', JSON.stringify(data));
         }
 
+        function getStashChallenges() {
+            try {
+                return JSON.parse(localStorage.getItem('yarnstash_stash_challenges')) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveStashChallenges(challenges) {
+            localStorage.setItem('yarnstash_stash_challenges', JSON.stringify(challenges));
+        }
+
+        function submitStashChallenge() {
+            if (!currentUser || !ensureMemberState()) {
+                showToast('Only YarnStash members can create stash challenges.');
+                return;
+            }
+
+            const titleInput = document.getElementById('challenge-title');
+            const promptInput = document.getElementById('challenge-prompt');
+            const deadlineInput = document.getElementById('challenge-deadline');
+            if (!titleInput || !promptInput || !deadlineInput) return;
+
+            const title = titleInput.value.trim();
+            const prompt = promptInput.value.trim();
+            const deadline = deadlineInput.value;
+
+            if (!title || !prompt) {
+                showToast('Add a challenge title and prompt before publishing.');
+                return;
+            }
+
+            const challenges = getStashChallenges();
+            challenges.unshift({
+                id: `challenge-${Date.now()}`,
+                author: currentUser,
+                title,
+                prompt,
+                deadline,
+                participants: [],
+                createdAt: Date.now()
+            });
+            saveStashChallenges(challenges);
+
+            titleInput.value = '';
+            promptInput.value = '';
+            deadlineInput.value = '';
+            renderCommunityFeed();
+            showToast('Challenge posted for your followers.');
+        }
+
+        function joinStashChallenge(challengeId) {
+            if (!currentUser) return;
+
+            const challenges = getStashChallenges();
+            const challenge = challenges.find(item => item.id === challengeId);
+            if (!challenge) return;
+
+            if (challenge.author === currentUser) {
+                showToast('You created this challenge.');
+                return;
+            }
+
+            const following = getFollowing();
+            const currentFollows = following[currentUser] || [];
+            if (!currentFollows.includes(challenge.author)) {
+                showToast('Follow this creator to join their challenge.');
+                return;
+            }
+
+            challenge.participants = challenge.participants || [];
+            if (challenge.participants.includes(currentUser)) {
+                showToast('You already joined this challenge.');
+                return;
+            }
+
+            challenge.participants.push(currentUser);
+            saveStashChallenges(challenges);
+            renderCommunityFeed();
+            showToast('You joined the stash challenge!');
+        }
+
         function handleCommunityImageFile(file, previewElement, urlInput) {
             if (!file || !file.type.startsWith('image/')) {
                 showToast('Please choose a valid image file.');
@@ -1498,6 +1636,7 @@
             if (!feed) return;
 
             const posts = getCommunityPosts().sort((a, b) => b.createdAt - a.createdAt);
+            const challenges = getStashChallenges().sort((a, b) => b.createdAt - a.createdAt);
             const following = getFollowing();
             const currentFollows = following[currentUser] || [];
             const isMemberViewer = ensureMemberState();
@@ -1525,6 +1664,58 @@
                     <button onclick="submitCommunityPost()" class="mt-4 btn-primary w-full py-3 rounded-xl">Post Craft</button>
                 </div>
             `;
+
+            const challengeComposer = isMemberViewer ? `
+                <div class="glass p-6 rounded-3xl">
+                    <h3 class="text-xl font-semibold mb-2 text-[#2f211d]">Create a Stash Challenge</h3>
+                    <p class="text-sm text-[#6d5142] mb-4">Set a prompt for your followers and invite them to share finished projects.</p>
+                    <input id="challenge-title" type="text" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Challenge title (e.g. Weekend Beanie Sprint)">
+                    <textarea id="challenge-prompt" class="w-full mt-3 min-h-[100px] p-4 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Challenge prompt, rules, and suggested yarn..."></textarea>
+                    <label class="block mt-3 text-xs text-[#6d5142]">Deadline (optional)</label>
+                    <input id="challenge-deadline" type="date" class="w-full mt-1 p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]">
+                    <button onclick="submitStashChallenge()" class="mt-4 btn-primary w-full py-3 rounded-xl">Publish Challenge</button>
+                </div>
+            ` : `
+                <div class="glass p-6 rounded-3xl">
+                    <h3 class="text-xl font-semibold mb-2 text-[#2f211d]">Stash Challenges</h3>
+                    <p class="text-sm text-[#6d5142]">Follow members to join their challenges, then share your project updates in the feed.</p>
+                </div>
+            `;
+
+            const challengeCards = challenges.length === 0 ? `
+                <div class="glass p-6 rounded-3xl text-center text-[#2f211d]">
+                    <p class="mb-2">No active stash challenges yet.</p>
+                </div>
+            ` : challenges.map(challenge => {
+                const participants = challenge.participants || [];
+                const hasJoined = participants.includes(currentUser);
+                const isOwner = challenge.author === currentUser;
+                const canJoin = currentFollows.includes(challenge.author);
+                const deadlineLabel = challenge.deadline ? new Date(challenge.deadline).toLocaleDateString() : 'No deadline';
+                const action = isOwner
+                    ? '<span class="text-xs font-semibold text-[#6d5142]">Your challenge</span>'
+                    : hasJoined
+                        ? '<span class="text-xs font-semibold text-green-700">Joined</span>'
+                        : canJoin
+                            ? `<button onclick="joinStashChallenge('${challenge.id}')" class="btn-primary px-3 py-2 rounded-xl text-sm">Join challenge</button>`
+                            : `<button onclick="toggleFollow('${challenge.author}')" class="px-3 py-2 rounded-xl text-sm border border-[#b68ba6] text-[#5f483c]">Follow ${challenge.author} to join</button>`;
+                return `
+                    <div class="glass p-6 rounded-3xl">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                                <p class="text-sm text-[#6d5142]">By ${challenge.author}</p>
+                                <h4 class="text-lg font-semibold text-[#2f211d]">${challenge.title}</h4>
+                            </div>
+                            ${action}
+                        </div>
+                        <p class="text-sm text-[#2f211d] mb-3">${challenge.prompt}</p>
+                        <div class="flex flex-wrap gap-3 text-xs text-[#6d5142]">
+                            <span>Deadline: ${deadlineLabel}</span>
+                            <span>Participants: ${participants.length}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
             const postCards = posts.length === 0 ? `
                 <div class="glass p-6 rounded-3xl text-center text-[#2f211d]">
@@ -1578,7 +1769,7 @@
                 `;
             }).join('');
 
-            feed.innerHTML = createForm + postCards;
+            feed.innerHTML = createForm + challengeComposer + challengeCards + postCards;
 
             const dropzone = document.getElementById('community-photo-dropzone');
             const fileInput = document.getElementById('community-photo-file-input');
@@ -1698,6 +1889,10 @@
                     : `${post.author} members-only exclusive`.toLowerCase();
                 return haystack.includes(query);
             });
+            const challengeMatches = getStashChallenges().filter(challenge => {
+                const haystack = `${challenge.author} ${challenge.title} ${challenge.prompt}`.toLowerCase();
+                return haystack.includes(query);
+            });
             const patternMatches = curatedPatterns.filter(pattern => {
                 const haystack = `${pattern.name} ${pattern.hook} ${pattern.steps.join(' ')} ${pattern.id}`.toLowerCase();
                 return haystack.includes(query);
@@ -1717,8 +1912,16 @@
                 </div>
             `).join('');
 
+            const challengeMarkup = challengeMatches.slice(0, 3).map(challenge => `
+                <div class="rounded-2xl bg-[#f0f8ff] p-3 text-sm text-[#2f211d]">
+                    <div class="font-semibold">${challenge.title}</div>
+                    <div class="text-xs text-[#6d5142] mt-1">By ${challenge.author}</div>
+                </div>
+            `).join('');
+
             resultsBox.innerHTML = `
                 <div class="space-y-2">
+                    ${challengeMarkup || '<div class="text-sm text-gray-400">No stash challenges matched.</div>'}
                     ${communityMarkup || '<div class="text-sm text-gray-400">No community posts matched.</div>'}
                     ${patternMarkup || '<div class="text-sm text-gray-400">No built-in patterns matched.</div>'}
                 </div>
@@ -1993,41 +2196,29 @@
 
         async function loadYarniversePatternResults(yarn, container) {
             const query = buildYarnQuery(yarn);
-            container.innerHTML = '<div class="text-sm text-gray-400">Searching the Yarniverse...</div>';
+            container.innerHTML = '<div class="text-sm text-gray-400">Searching the Yarniverse across the entire internet...</div>';
 
             try {
-                const resp = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(query)}&site=all`);
-                if (!resp.ok) {
-                    console.warn('Local scraper proxy failed with status', resp.status);
-                    const fallbackResults = await browserDuckDuckGoSearch(query);
-                    if (fallbackResults.length) {
-                        renderBrowserFallback(container, fallbackResults);
-                    } else {
-                        renderDuckDuckGoSearchSuggestion(container, query);
-                    }
-                    return;
-                }
-
-                const data = await resp.json();
+                const results = await searchMultipleSources(query);
                 container.innerHTML = '';
 
-                if (!data.ok || !data.results || data.results.length === 0) {
-                    const fallbackResults = await browserDuckDuckGoSearch(query);
-                    if (fallbackResults.length) {
-                        renderBrowserFallback(container, fallbackResults);
-                        return;
-                    }
-                    renderDuckDuckGoSearchSuggestion(container, query);
+                if (!results || results.length === 0) {
+                    container.innerHTML = `
+                        <div class="glass p-6 rounded-lg text-center">
+                            <p class="text-gray-300 mb-4">No patterns found for: <strong>${query}</strong></p>
+                            <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Search Google directly</a>
+                        </div>
+                    `;
                     return;
                 }
 
-                data.results.slice(0, 10).forEach(item => {
+                results.forEach(item => {
                     const resultCard = document.createElement('div');
                     resultCard.className = 'glass p-4 rounded-lg flex flex-col gap-3';
                     resultCard.innerHTML = `
                         <div>
                             <p class="font-semibold text-lg">${item.title}</p>
-                            <p class="text-xs text-gray-400">${item.site}</p>
+                            <p class="text-xs text-gray-400">${item.site} • ${new URL(item.url).hostname}</p>
                         </div>
                         <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Open pattern</a>
                     `;
@@ -2035,16 +2226,12 @@
                 });
             } catch (err) {
                 console.error('Yarniverse search error:', err);
-                try {
-                    const fallbackResults = await browserDuckDuckGoSearch(query);
-                    if (fallbackResults.length) {
-                        renderBrowserFallback(container, fallbackResults);
-                        return;
-                    }
-                } catch (fallbackError) {
-                    console.error('Browser fallback search failed:', fallbackError);
-                }
-                renderDuckDuckGoSearchSuggestion(container, query);
+                container.innerHTML = `
+                    <div class="glass p-6 rounded-lg text-center">
+                        <p class="text-gray-300 mb-4">Search error. Try searching directly:</p>
+                        <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Search Google</a>
+                    </div>
+                `;
             }
         }
 
@@ -2054,50 +2241,28 @@
             document.getElementById('pattern-search-desc').innerHTML = searchDesc;
 
             const patternLinks = document.getElementById('pattern-links');
-            patternLinks.innerHTML = '<div class="text-sm text-gray-400">Searching the Yarniverse...</div>';
+            patternLinks.innerHTML = '<div class="text-sm text-gray-400">Searching across the entire internet...</div>';
 
             const query = buildYarnQuery(yarn);
             try {
-                const resp = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(query)}&site=all`);
-                if (!resp.ok) {
-                    console.warn('Local scraper proxy failed with status', resp.status);
-                    const fallbackResults = await browserDuckDuckGoSearch(query);
-                    if (fallbackResults.length) {
-                        patternLinks.innerHTML = '';
-                        fallbackResults.slice(0, 20).forEach(item => {
-                            const card = document.createElement('div');
-                            card.className = 'glass p-4 rounded-lg flex items-start justify-between';
-                            card.innerHTML = `
-                                <div class="pr-4">
-                                    <p class="font-semibold text-lg">${item.title}</p>
-                                    <p class="text-xs text-gray-400">${item.site}</p>
-                                </div>
-                                <div class="flex flex-col items-end gap-2">
-                                    <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-semibold">Visit link for pattern!</a>
-                                </div>
-                            `;
-                            patternLinks.appendChild(card);
-                        });
-                        document.getElementById('patterns-modal').classList.remove('hidden-section');
-                        return;
-                    }
-                    console.error('Scraper proxy not responding:', resp.status);
-                    renderDuckDuckGoSearchSuggestion(patternLinks, query);
-                    document.getElementById('patterns-modal').classList.remove('hidden-section');
-                    return;
-                }
-                const data = await resp.json();
+                const results = await searchMultipleSources(query);
                 patternLinks.innerHTML = '';
-                if (!data.ok || !data.results || data.results.length === 0) {
-                    patternLinks.innerHTML = '<div class="col-span-full text-center py-6 glass">No live patterns found. Try different keywords.</div>';
+                
+                if (!results || results.length === 0) {
+                    patternLinks.innerHTML = `
+                        <div class="col-span-full text-center py-6 glass">
+                            <p class="text-gray-300 mb-4">No patterns found. Try searching directly:</p>
+                            <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Search Google</a>
+                        </div>
+                    `;
                 } else {
-                    data.results.slice(0, 20).forEach(item => {
+                    results.forEach(item => {
                         const card = document.createElement('div');
                         card.className = 'glass p-4 rounded-lg flex items-start justify-between';
                         card.innerHTML = `
                             <div class="pr-4">
                                 <p class="font-semibold text-lg">${item.title}</p>
-                                <p class="text-xs text-gray-400">${item.site}</p>
+                                <p class="text-xs text-gray-400">${item.site} • ${new URL(item.url).hostname}</p>
                             </div>
                             <div class="flex flex-col items-end gap-2">
                                 <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-semibold">Visit link for pattern!</a>
@@ -2108,7 +2273,12 @@
                 }
             } catch (err) {
                 console.error('Pattern search error:', err);
-                renderDuckDuckGoSearchSuggestion(patternLinks, query);
+                patternLinks.innerHTML = `
+                    <div class="col-span-full text-center py-6 glass">
+                        <p class="text-gray-300 mb-4">Search error. Try searching directly:</p>
+                        <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Search Google</a>
+                    </div>
+                `;
             }
 
             document.getElementById('patterns-modal').classList.remove('hidden-section');
