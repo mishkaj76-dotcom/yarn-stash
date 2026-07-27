@@ -555,20 +555,82 @@
         async function fetchThroughCorsProxy(url) {
             let lastError = null;
             for (const proxy of CORS_PROXY_SERVICES) {
+                let timeout = null;
                 try {
-                    const response = await fetch(proxy + encodeURIComponent(url));
+                    const controller = new AbortController();
+                    timeout = setTimeout(() => controller.abort(), 4000);
+                    const response = await fetch(proxy + encodeURIComponent(url), { signal: controller.signal });
+                    clearTimeout(timeout);
                     if (!response.ok) {
                         lastError = new Error(`CORS proxy request failed: ${response.status} via ${proxy}`);
-                        console.warn(lastError);
                         continue;
                     }
                     return await response.text();
                 } catch (err) {
                     lastError = err;
-                    console.warn('CORS proxy failed:', proxy, err);
+                    if (err && err.name !== 'AbortError') {
+                        console.warn('CORS proxy failed:', proxy, err);
+                    }
+                } finally {
+                    if (timeout) clearTimeout(timeout);
                 }
             }
             throw lastError || new Error('All CORS proxies failed for browser fallback');
+        }
+
+        async function searchViaLocalScraper(query) {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 10000);
+                const response = await fetch(`${SCRAPER_API_BASE}/api/search?q=${encodeURIComponent(query)}&site=all`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+                if (!response.ok) return [];
+                const data = await response.json();
+                if (!data || !data.ok || !Array.isArray(data.results)) return [];
+                return data.results
+                    .filter(item => item && item.url && item.title)
+                    .map(item => ({
+                        title: item.title,
+                        url: item.url,
+                        site: item.site || 'Yarniverse'
+                    }))
+                    .slice(0, 20);
+            } catch (err) {
+                console.warn('Local scraper unavailable:', err);
+                return [];
+            }
+        }
+
+        function getDomainLabel(urlValue) {
+            try {
+                const parsed = new URL(urlValue);
+                return parsed.hostname || 'pattern link';
+            } catch {
+                return 'pattern link';
+            }
+        }
+
+        function getCuratedPatternFallback(query) {
+            const tokens = buildSearchTokens(query);
+            const keywordRegex = /(pattern|crochet|amigurumi|blanket|beanie|shawl|scarf|sweater|knit|hat|cardigan|granny)/i;
+            const matches = curatedPatterns
+                .map(pattern => {
+                    const haystack = `${pattern.name} ${pattern.hook} ${pattern.yardage} ${(pattern.steps || []).join(' ')}`.toLowerCase();
+                    const score = tokens.reduce((acc, token) => acc + (haystack.includes(token) ? 1 : 0), 0);
+                    return { pattern, score };
+                })
+                .filter(item => item.score > 0 || keywordRegex.test(query))
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 8)
+                .map(item => ({
+                    title: item.pattern.name,
+                    url: item.pattern.url,
+                    site: 'Yarniverse Library'
+                }));
+
+            return matches;
         }
 
         async function searchBingResults(query) {
@@ -638,24 +700,31 @@
         async function searchMultipleSources(query) {
             console.log('Searching multiple sources for:', query);
             try {
-                const [ddgResults, bingResults] = await Promise.all([
+                const [localResults, ddgResults, bingResults] = await Promise.all([
+                    searchViaLocalScraper(query),
                     browserDuckDuckGoSearch(query),
                     searchBingResults(query)
                 ]);
                 
-                const combined = [...ddgResults, ...bingResults];
+                const combined = [...localResults, ...ddgResults, ...bingResults];
                 const seen = new Set();
                 const unique = combined.filter(result => {
+                    if (!result || !result.url || !result.title) return false;
                     const normalized = result.url.toLowerCase();
                     if (seen.has(normalized)) return false;
                     seen.add(normalized);
                     return true;
                 });
+
+                if (!unique.length) {
+                    const curatedFallback = getCuratedPatternFallback(query);
+                    return curatedFallback;
+                }
                 
                 return unique.slice(0, 20);
             } catch (err) {
                 console.error('Multi-source search failed:', err);
-                return [];
+                return getCuratedPatternFallback(query);
             }
         }
 
@@ -2082,7 +2151,7 @@
                     resultCard.innerHTML = `
                         <div>
                             <p class="font-semibold text-lg">${item.title}</p>
-                            <p class="text-xs text-gray-400">${item.site} • ${new URL(item.url).hostname}</p>
+                            <p class="text-xs text-gray-400">${item.site} • ${getDomainLabel(item.url)}</p>
                         </div>
                         <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Open pattern</a>
                     `;
@@ -2126,7 +2195,7 @@
                         card.innerHTML = `
                             <div class="pr-4">
                                 <p class="font-semibold text-lg">${item.title}</p>
-                                <p class="text-xs text-gray-400">${item.site} • ${new URL(item.url).hostname}</p>
+                                <p class="text-xs text-gray-400">${item.site} • ${getDomainLabel(item.url)}</p>
                             </div>
                             <div class="flex flex-col items-end gap-2">
                                 <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-semibold">Visit link for pattern!</a>
