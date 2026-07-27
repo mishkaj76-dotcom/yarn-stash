@@ -277,64 +277,13 @@
                 </div>
             </section>
 
-            <section id="tab-membership" class="tab-content hidden-section animate-fade">
-                <div class="mb-8">
-                    <h2 class="text-2xl font-semibold mb-2">Membership</h2>
-                    <p class="text-gray-400">Support YarnStash and unlock the full maker community experience.</p>
-                </div>
-                <div class="glass p-6 rounded-3xl">
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-semibold">Buy Me a Coffee Membership Perks</h2>
-                        <p class="text-gray-400">These perks are for supporters who subscribe through Buy Me a Coffee and pay for membership.</p>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="glass p-6 rounded-3xl">
-                            <h3 class="text-xl font-bold mb-3">Join the YarnStash Circle</h3>
-                            <p class="text-3xl font-bold mb-4">$9<span class="text-sm font-normal">/month</span></p>
-                            <p class="text-gray-300 mb-4">Ready to show off your latest masterpiece? Our community is a vibrant space where passionate fiber artists share their work, exchange tips, and inspire one another.</p>
-                            <ul class="text-gray-400 space-y-2 mb-6">
-                                <li>Unlock exclusive posts and messages</li>
-                                <li>Post in the community!</li>
-                            </ul>
-                            <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
-                        </div>
-                        <div class="glass p-6 rounded-3xl">
-                            <h3 class="text-xl font-bold mb-3">The “Skein” Member</h3>
-                            <p class="text-sm text-gray-300 mb-2">Paid / Monthly</p>
-                            <p class="text-3xl font-bold mb-4">$15<span class="text-sm font-normal">/month</span></p>
-                            <p class="text-gray-300 mb-4">Access unlimited stash logging and photo uploads. Post your own projects to the community feed and participate in Stash Challenges.</p>
-                            <ul class="text-gray-400 space-y-2 mb-6">
-                                <li>Unlimited stash logging and photo uploads</li>
-                                <li>Post your own projects to community feed</li>
-                                <li>Create stash challenges for followers</li>
-                                <li>Participate in Stash Challenges</li>
-                                <li>Unlock exclusive posts and messages</li>
-                                <li>Ad-free experience</li>
-                            </ul>
-                            <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
-                        </div>
-                        <div class="glass p-6 rounded-3xl">
-                            <h3 class="text-xl font-bold mb-3">The “Artisan” Member</h3>
-                            <p class="text-sm text-gray-300 mb-2">Annual / Higher Tier</p>
-                            <p class="text-3xl font-bold mb-4">$19<span class="text-sm font-normal">/month</span></p>
-                            <p class="text-gray-300 mb-4">Priority access to new features like the Pattern Matcher, plus a digital Verified Maker badge and export tools for stash tracking.</p>
-                            <ul class="text-gray-400 space-y-2 mb-6">
-                                <li>Unlock exclusive posts and messages</li>
-                                <li>Export stash as PDF or CSV</li>
-                            </ul>
-                            <a href="https://buymeacoffee.com/yarnstash" onclick="openBuyMePage(); return false;" class="btn-primary w-full inline-block text-center py-3 rounded-xl">Join</a>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             <section id="tab-community" class="tab-content hidden-section animate-fade">
                 <div class="mb-8">
                     <h2 class="text-2xl font-semibold mb-2 text-[#2f211d]">Community</h2>
                     <p class="text-[#5f483c]">Share your newest makes, discover inspiration, and search for patterns together.</p>
                 </div>
                 <div id="community-gate" class="glass p-6 rounded-3xl mb-6">
-                    <p class="text-[#2f211d] mb-4">This space is reserved for members only. Post your crafts, follow other makers, like posts, and leave comments.</p>
+                    <p class="text-[#2f211d] mb-4">This space is for all YarnStash makers. Post your crafts, follow other makers, create stash challenges, and leave comments.</p>
                     <button onclick="switchTab('community')" class="btn-primary w-full py-3 rounded-xl">Open Community</button>
                 </div>
                 <div class="glass p-6 rounded-3xl mb-6">
@@ -414,12 +363,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
                 <span class="text-[10px] font-medium">MATCH</span>
-            </button>
-            <button onclick="switchTab('membership')" class="nav-item flex flex-col items-center gap-1" id="nav-membership">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 1.343-3 3v1H8a2 2 0 00-2 2v3a2 2 0 002 2h8a2 2 0 002-2v-3a2 2 0 00-2-2h-1v-1c0-1.657-1.343-3-3-3z" />
-                </svg>
-                <span class="text-[10px] font-medium">MEMBERS</span>
             </button>
             <button onclick="switchTab('community')" class="nav-item flex flex-col items-center gap-1" id="nav-community">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1011,7 +954,6 @@
                 verified: false,
                 verificationCode,
                 codeExpiresAt,
-                membership: false,
                 displayName: user,
                 bio: '',
                 location: '',
@@ -1167,8 +1109,7 @@
                 location: data.location || '',
                 favoriteFiber: data.favoriteFiber || '',
                 website: data.website || '',
-                avatarUrl: data.avatarUrl || '',
-                membership: !!data.membership
+                avatarUrl: data.avatarUrl || ''
             };
         }
 
@@ -1252,7 +1193,7 @@
                             <div>
                                 <h3 class="text-xl font-semibold text-[#2f211d]">${profile.displayName || targetUser}</h3>
                                 <p class="text-sm text-[#6d5142]">@${targetUser}</p>
-                                <p class="text-xs text-[#7a4c54] font-semibold">${profile.membership ? 'YarnStash Member' : 'Follower Account'}</p>
+                                <p class="text-xs text-[#7a4c54] font-semibold">YarnStash Creator</p>
                                 <p class="text-sm text-[#6d5142]">${profile.location || 'Location not shared yet'}</p>
                             </div>
                         </div>
@@ -1297,7 +1238,7 @@
                 <div class="glass p-6 rounded-3xl">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-[#2f211d]">Discover other makers</h3>
-                        <span class="text-sm text-[#6d5142]">${otherUsers.length} member${otherUsers.length === 1 ? '' : 's'}</span>
+                        <span class="text-sm text-[#6d5142]">${otherUsers.length} maker${otherUsers.length === 1 ? '' : 's'}</span>
                     </div>
                     <div class="grid gap-3 md:grid-cols-2">
                         ${otherUsers.length ? otherUsers.map(user => {
@@ -1318,7 +1259,7 @@
                                     </div>
                                 </div>
                             `;
-                        }).join('') : '<p class="text-[#6d5142]">No other members yet.</p>'}
+                        }).join('') : '<p class="text-[#6d5142]">No other makers yet.</p>'}
                     </div>
                 </div>
 
@@ -1326,19 +1267,8 @@
                     <h3 class="text-lg font-semibold text-[#2f211d] mb-4">Recent posts by ${profile.displayName || targetUser}</h3>
                     <div class="space-y-3">
                         ${recentPosts.length ? recentPosts.map(post => {
-                            const isLocked = !!post.membersOnly && !ensureMemberState() && post.author !== currentUser;
-                            if (isLocked) {
-                                return `
-                                    <div class="rounded-2xl bg-[#fff9e9] p-4 text-[#5f483c]">
-                                        <p class="text-xs font-semibold mb-1 text-[#805b00]">Members-only exclusive</p>
-                                        <p class="text-sm">Locked for follower accounts.</p>
-                                    </div>
-                                `;
-                            }
-
                             return `
                                 <div class="rounded-2xl bg-[#fcf8fb] p-4 text-[#2f211d]">
-                                    ${post.membersOnly ? '<p class="text-xs font-semibold mb-1 text-[#805b00]">Members-only exclusive</p>' : ''}
                                     <p class="text-sm">${post.content}</p>
                                 </div>
                             `;
@@ -1431,35 +1361,6 @@
 
         let pendingCommunityImage = '';
 
-        function openBuyMePage() {
-            if (currentUser) {
-                activateMembershipForCurrentUser();
-            }
-            window.open('https://buymeacoffee.com/yarnstash', '_blank');
-        }
-
-        function activateMembershipForCurrentUser() {
-            try {
-                const userRegistry = JSON.parse(localStorage.getItem('yarnstash_global_registry')) || {};
-                if (currentUser && userRegistry[currentUser]) {
-                    userRegistry[currentUser].membership = true;
-                    localStorage.setItem('yarnstash_global_registry', JSON.stringify(userRegistry));
-                    showToast('Membership activated for your account.');
-                }
-            } catch (err) {
-                console.warn('Membership activation failed:', err);
-            }
-        }
-
-        function ensureMemberState() {
-            try {
-                const userRegistry = JSON.parse(localStorage.getItem('yarnstash_global_registry')) || {};
-                return currentUser && userRegistry[currentUser] && userRegistry[currentUser].membership;
-            } catch {
-                return false;
-            }
-        }
-
         function openCommunity() {
             const feed = document.getElementById('community-feed');
             const gate = document.getElementById('community-gate');
@@ -1477,16 +1378,7 @@
                 return;
             }
 
-            if (!ensureMemberState()) {
-                gate.classList.remove('hidden-section');
-                feed.classList.remove('hidden-section');
-                gate.innerHTML = `
-                    <p class="text-gray-300 mb-4">You are using a follower account. You can follow creators and view public posts. Exclusive posts are reserved for YarnStash members.</p>
-                    <button onclick="openBuyMePage()" class="btn-primary w-full py-3 rounded-xl">Upgrade to Member</button>
-                `;
-            } else {
-                gate.classList.add('hidden-section');
-            }
+            gate.classList.add('hidden-section');
 
             feed.classList.remove('hidden-section');
             if (searchResults) searchResults.innerHTML = '';
@@ -1530,8 +1422,8 @@
         }
 
         function submitStashChallenge() {
-            if (!currentUser || !ensureMemberState()) {
-                showToast('Only YarnStash members can create stash challenges.');
+            if (!currentUser) {
+                showToast('Please sign in to create stash challenges.');
                 return;
             }
 
@@ -1639,8 +1531,6 @@
             const challenges = getStashChallenges().sort((a, b) => b.createdAt - a.createdAt);
             const following = getFollowing();
             const currentFollows = following[currentUser] || [];
-            const isMemberViewer = ensureMemberState();
-            const userRegistry = getUserRegistry();
 
             const createForm = `
                 <div class="glass p-6 rounded-3xl">
@@ -1660,12 +1550,11 @@
                         <input id="community-post-image" type="url" class="w-full mt-3 p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Paste an image URL (optional)">
                         <div id="community-photo-preview" class="mt-3"></div>
                     </div>
-                    ${isMemberViewer ? '<label class="mt-3 flex items-center gap-2 text-sm text-[#5f483c]"><input id="community-post-exclusive" type="checkbox"> Members-only exclusive post</label>' : '<p class="mt-3 text-xs text-[#7a4c54]">Follower account: you can post publicly. Upgrade to create members-only exclusive posts.</p>'}
                     <button onclick="submitCommunityPost()" class="mt-4 btn-primary w-full py-3 rounded-xl">Post Craft</button>
                 </div>
             `;
 
-            const challengeComposer = isMemberViewer ? `
+            const challengeComposer = `
                 <div class="glass p-6 rounded-3xl">
                     <h3 class="text-xl font-semibold mb-2 text-[#2f211d]">Create a Stash Challenge</h3>
                     <p class="text-sm text-[#6d5142] mb-4">Set a prompt for your followers and invite them to share finished projects.</p>
@@ -1674,11 +1563,6 @@
                     <label class="block mt-3 text-xs text-[#6d5142]">Deadline (optional)</label>
                     <input id="challenge-deadline" type="date" class="w-full mt-1 p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]">
                     <button onclick="submitStashChallenge()" class="mt-4 btn-primary w-full py-3 rounded-xl">Publish Challenge</button>
-                </div>
-            ` : `
-                <div class="glass p-6 rounded-3xl">
-                    <h3 class="text-xl font-semibold mb-2 text-[#2f211d]">Stash Challenges</h3>
-                    <p class="text-sm text-[#6d5142]">Follow members to join their challenges, then share your project updates in the feed.</p>
                 </div>
             `;
 
@@ -1723,8 +1607,6 @@
                 </div>
             ` : posts.map(post => {
                 const liked = post.likesBy?.includes(currentUser);
-                const isLocked = !!post.membersOnly && !isMemberViewer && post.author !== currentUser;
-                const isAuthorMember = !!userRegistry[post.author]?.membership;
                 const media = post.imageData ? `<img src="${post.imageData}" alt="Craft photo" class="w-full rounded-2xl mb-4 object-cover max-h-80">` : post.imageUrl ? `<img src="${post.imageUrl}" alt="Craft photo" class="w-full rounded-2xl mb-4 object-cover max-h-80">` : '';
                 const tags = post.tags?.length ? `<div class="flex flex-wrap gap-2 mb-4">${post.tags.map(tag => `<span class="rounded-full bg-[#f5eef7] px-3 py-1 text-xs font-semibold text-[#7a4c54]">#${tag}</span>`).join('')}</div>` : '';
                 return `
@@ -1733,38 +1615,28 @@
                             <div>
                                 <p class="text-sm text-[#6d5142]">${new Date(post.createdAt).toLocaleString()}</p>
                                 <h4 class="text-lg font-semibold text-[#2f211d]">${post.author}</h4>
-                                <span class="inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-semibold ${isAuthorMember ? 'bg-[#eaf7ef] text-[#2f7b45]' : 'bg-[#f5eef7] text-[#7a4c54]'}">${isAuthorMember ? 'Member' : 'Follower'}</span>
+                                <span class="inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-semibold bg-[#f5eef7] text-[#7a4c54]">Creator</span>
                             </div>
                             <button onclick="toggleFollow('${post.author}')" class="text-sm font-semibold ${currentFollows.includes(post.author) ? 'text-green-600' : 'text-[#5f483c]'}">${post.author === currentUser ? 'You' : currentFollows.includes(post.author) ? 'Following' : 'Follow'}</button>
                         </div>
-                        ${post.membersOnly ? '<p class="mb-3 inline-block rounded-full bg-[#fff3d8] px-3 py-1 text-xs font-semibold text-[#805b00]">Members-only exclusive</p>' : ''}
-                        ${isLocked ? `
-                            <div class="rounded-2xl bg-[#fff9e9] p-4 text-[#5f483c]">
-                                <p class="font-semibold mb-2">Exclusive post</p>
-                                <p class="text-sm mb-3">This post is visible to YarnStash members only.</p>
-                                <button onclick="openBuyMePage()" class="btn-primary px-3 py-2 rounded-xl text-sm">Unlock with Membership</button>
+                        <p class="text-[#2f211d] mb-4">${post.content}</p>
+                        ${tags}
+                        ${media}
+                        <div class="flex flex-wrap gap-3 items-center text-sm text-[#5f483c]">
+                            <button onclick="toggleLike('${post.id}')" class="font-semibold ${liked ? 'text-pink-500' : 'text-[#5f483c]'}">${liked ? '♥' : '♡'} ${post.likes || 0}</button>
+                            <button onclick="promptComment('${post.id}')" class="text-[#5f483c] underline decoration-dotted">Comment</button>
+                            <button onclick="viewProfile('${post.author}')" class="text-[#5f483c] underline decoration-dotted">View profile</button>
+                            <span>${post.comments?.length || 0} comment${(post.comments?.length || 0) === 1 ? '' : 's'}</span>
+                        </div>
+                        ${post.comments && post.comments.length ? `
+                            <div class="mt-4 space-y-3">
+                                ${post.comments.map(comment => `
+                                    <div class="rounded-2xl bg-[#f4eff3] p-3 text-sm text-[#4a3b32]">
+                                        <strong>${comment.user}</strong>: ${comment.text}
+                                    </div>
+                                `).join('')}
                             </div>
-                            <div class="mt-3 text-sm text-[#5f483c]"><button onclick="viewProfile('${post.author}')" class="underline decoration-dotted">View profile</button></div>
-                        ` : `
-                            <p class="text-[#2f211d] mb-4">${post.content}</p>
-                            ${tags}
-                            ${media}
-                            <div class="flex flex-wrap gap-3 items-center text-sm text-[#5f483c]">
-                                <button onclick="toggleLike('${post.id}')" class="font-semibold ${liked ? 'text-pink-500' : 'text-[#5f483c]'}">${liked ? '♥' : '♡'} ${post.likes || 0}</button>
-                                <button onclick="promptComment('${post.id}')" class="text-[#5f483c] underline decoration-dotted">Comment</button>
-                                <button onclick="viewProfile('${post.author}')" class="text-[#5f483c] underline decoration-dotted">View profile</button>
-                                <span>${post.comments?.length || 0} comment${(post.comments?.length || 0) === 1 ? '' : 's'}</span>
-                            </div>
-                            ${post.comments && post.comments.length ? `
-                                <div class="mt-4 space-y-3">
-                                    ${post.comments.map(comment => `
-                                        <div class="rounded-2xl bg-[#f4eff3] p-3 text-sm text-[#4a3b32]">
-                                            <strong>${comment.user}</strong>: ${comment.text}
-                                        </div>
-                                    `).join('')}
-                                </div>
-                            ` : ''}
-                        `}
+                        ` : ''}
                     </div>
                 `;
             }).join('');
@@ -1810,7 +1682,6 @@
             const textarea = document.getElementById('community-post-text');
             const imageInput = document.getElementById('community-post-image');
             const tagsInput = document.getElementById('community-post-tags');
-            const exclusiveInput = document.getElementById('community-post-exclusive');
             if (!textarea) return;
             const content = textarea.value.trim();
             if (!content) {
@@ -1819,7 +1690,6 @@
             }
             const imageUrl = imageInput ? imageInput.value.trim() : '';
             const tags = tagsInput ? tagsInput.value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) : [];
-            const membersOnly = !!(exclusiveInput && exclusiveInput.checked && ensureMemberState());
             const posts = getCommunityPosts();
             posts.unshift({
                 id: `post-${Date.now()}`,
@@ -1828,7 +1698,6 @@
                 imageUrl,
                 imageData: pendingCommunityImage || '',
                 tags,
-                membersOnly,
                 likes: 0,
                 likesBy: [],
                 comments: [],
@@ -1880,13 +1749,8 @@
                 return;
             }
 
-            const isMemberViewer = ensureMemberState();
-
             const communityMatches = getCommunityPosts().filter(post => {
-                const visible = !post.membersOnly || isMemberViewer || post.author === currentUser;
-                const haystack = visible
-                    ? `${post.author} ${post.content} ${post.imageUrl || ''} ${post.imageData || ''} ${(post.tags || []).join(' ')}`.toLowerCase()
-                    : `${post.author} members-only exclusive`.toLowerCase();
+                const haystack = `${post.author} ${post.content} ${post.imageUrl || ''} ${post.imageData || ''} ${(post.tags || []).join(' ')}`.toLowerCase();
                 return haystack.includes(query);
             });
             const challengeMatches = getStashChallenges().filter(challenge => {
