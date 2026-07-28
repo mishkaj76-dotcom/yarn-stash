@@ -899,13 +899,13 @@
             'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns',
             'https://hobbii.com/product-patterns/free-patterns',
             'https://www.garnstudio.com/search.php?c=crochet&lang=en',
-            'https://www.allfreecrochet.com/Beginner-Crochet',
-            'https://www.allfreecrochet.com/Crochet-Afghans',
-            'https://www.allfreecrochet.com/Crochet-Hats-and-Baby-Hats',
-            'https://www.allfreecrochet.com/Amigurumi',
-            'https://www.allfreecrochet.com/Crochet-Sweaters',
-            'https://www.allfreecrochet.com/Crochet-Bags-and-Totes',
-            'https://www.allfreecrochet.com/Crochet-Granny-Square-Patterns'
+            'https://www.allfreecrochet.com/tag/Beginner',
+            'https://www.allfreecrochet.com/Crochet-Afghan-Patterns/Worlds-Easiest-Afghan-Caron-Yarns',
+            'https://www.allfreecrochet.com/Hats/Simple-Beanie-194893',
+            'https://www.allfreecrochet.com/Crochet-Amigurumi-Patterns/Nogard-The-No-sew-Dragon-194849',
+            'https://www.allfreecrochet.com/Sweaters/Arlo-Granny-Square-Cardigan',
+            'https://www.allfreecrochet.com/Crochet-Bag-Patterns/Eclipse-Bottle-Holder',
+            'https://www.allfreecrochet.com/Miscellaneous-Crochet/Shift-Granny-Square-153910'
         ];
 
         function getTrustedSourceItems() {
@@ -959,6 +959,23 @@
             return normalizePatternUrl(rawUrl, fallbackQuery);
         }
 
+        function forceNavigate(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            const target = event && event.currentTarget ? event.currentTarget : null;
+            const href = target ? target.getAttribute('href') : '';
+            if (!href) {
+                return false;
+            }
+            try {
+                window.location.assign(href);
+            } catch (err) {
+                window.location.href = href;
+            }
+            return false;
+        }
+
         async function renderYarniverseSearchResults(container, query) {
             const safeQuery = escapeHtml(query || '');
             container.innerHTML = `
@@ -997,7 +1014,7 @@
                             <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title || 'Pattern link')}</p>
                             <p class="text-xs text-gray-400">${escapeHtml(item.site || 'Yarniverse')} • ${escapeHtml(getDomainLabel(safeUrl))}</p>
                         </div>
-                        <a href="${safeUrl}" class="shrink-0 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
+                        <a href="${safeUrl}" onclick="return forceNavigate(event)" class="shrink-0 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
                     `;
                     resultsRoot.appendChild(card);
                 });
@@ -1011,7 +1028,7 @@
                             <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title)}</p>
                             <p class="text-xs text-gray-400">${escapeHtml(item.site)} • ${escapeHtml(getDomainLabel(item.url))}</p>
                         </div>
-                        <a href="${item.url}" class="shrink-0 inline-block bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
+                        <a href="${item.url}" onclick="return forceNavigate(event)" class="shrink-0 inline-block bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
                     `;
                     resultsRoot.appendChild(card);
                 });
@@ -1036,7 +1053,7 @@
                 weight: 4,
                 yardage: 200,
                 hook: '5.0mm',
-                url: 'https://www.allfreecrochet.com/Crochet-Pattern-Archive/Simple-Slouchy-Beanie-Crochet-Pattern',
+                url: 'https://www.allfreecrochet.com/Hats/Simple-Beanie-194893',
                 steps: [
                     'Round 1: Magic ring, 12 DC into ring. Join.',
                     'Round 2: 2 DC in each st around. (24 DC)',
@@ -1052,7 +1069,7 @@
                 weight: 4,
                 yardage: 150,
                 hook: '3.5mm',
-                url: 'https://www.ravelry.com/patterns/library/amigurumi-octopus',
+                url: 'https://www.ravelry.com/patterns/search#craft=crochet&availability=free',
                 steps: [
                     'Head: Round 1-6: Standard SC increases to 36 sts.',
                     'Rounds 7-12: SC around.',
@@ -1066,7 +1083,7 @@
                 weight: 4,
                 yardage: 1200,
                 hook: '6.0mm',
-                url: 'https://www.pinterest.com/pin/granny-square-blanket-pattern/',
+                url: 'https://www.allfreecrochet.com/Crochet-Afghan-Patterns/Worlds-Easiest-Afghan-Caron-Yarns',
                 steps: [
                     'Center: Ch 4, join to form ring.',
                     'Round 1: (3 DC, ch 2) 4 times into ring.',
@@ -1080,7 +1097,7 @@
                 weight: 4,
                 yardage: 450,
                 hook: '5.0mm',
-                url: 'https://www.lovecrafts.com/en-us/p/crochet-tote-bag-pattern',
+                url: 'https://www.allfreecrochet.com/Crochet-Bag-Patterns/Eclipse-Bottle-Holder',
                 steps: [
                     'Base: Chain 31. SC in 2nd ch and across. Rotate and SC on other side.',
                     'Body: Work in Mesh Stitch (DC, ch 1, skip 1) for 25 rounds.',
@@ -1093,7 +1110,7 @@
                 weight: 5,
                 yardage: 1200,
                 hook: '6.5mm',
-                url: 'https://www.yarnspirations.com/patterns/cloud-soft-oversized-sweater',
+                url: 'https://www.allfreecrochet.com/Sweaters/Arlo-Granny-Square-Cardigan',
                 steps: [
                     'Back Panel: Ch 65. HDC for 50 rows.',
                     'Front Panel: Ch 65 for 45 rows, then shape neckline.',
@@ -1107,7 +1124,7 @@
                 weight: 3,
                 yardage: 300,
                 hook: '3.5mm',
-                url: 'https://www.crochet.com/patterns/luxury-chevron-clutch',
+                url: 'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns',
                 steps: [
                     'Flap: Ch 41. Work in Chevron pattern (2 SC in first, 8 SC, skip 2, 8 SC, 3 SC in next).',
                     'Body: Work 30 rows of Chevron pattern.',
@@ -1120,7 +1137,7 @@
                 weight: 4,
                 yardage: 250,
                 hook: '3.25mm',
-                url: 'https://www.ravelry.com/patterns/library/brachiosaurus-plushie',
+                url: 'https://www.allfreecrochet.com/Crochet-Amigurumi-Patterns/Nogard-The-No-sew-Dragon-194849',
                 steps: [
                     'Body: R1-10: Inc to 48 SC. R11-20: SC around. R21-30: Dec to 12.',
                     'Neck: Long tube of 15 SC for 25 rows.',
@@ -1134,7 +1151,7 @@
                 weight: 1,
                 yardage: 900,
                 hook: '3.0mm',
-                url: 'https://www.ravelry.com/patterns/library/sunset-lacy-shawl',
+                url: 'https://www.ravelry.com/patterns/search#craft=crochet&availability=free',
                 steps: [
                     'Chain 180, then work alternating shell and chain rows.',
                     'Repeat mesh shells for 20 rows.',
@@ -1147,7 +1164,7 @@
                 weight: 3,
                 yardage: 120,
                 hook: '4.0mm',
-                url: 'https://www.ravelry.com/patterns/library/textured-fingerless-mitts',
+                url: 'https://www.ravelry.com/patterns/search#craft=crochet&availability=free',
                 steps: [
                     'Work wrist cuff in back loop only for 12 rows.',
                     'Switch to textured stitch for 16 rows.',
@@ -1160,7 +1177,7 @@
                 weight: 6,
                 yardage: 250,
                 hook: '10.0mm',
-                url: 'https://www.allfreecrochet.com/Chunky-Scarf-Pattern',
+                url: 'https://www.allfreecrochet.com/tag/Beginner',
                 steps: [
                     'Chain 18.',
                     'Row 1: SC across.',
@@ -1174,7 +1191,7 @@
                 weight: 3,
                 yardage: 80,
                 hook: '4.0mm',
-                url: 'https://www.pinterest.com/pin/color-block-coasters/',
+                url: 'https://www.garnstudio.com/search.php?c=crochet&lang=en',
                 steps: [
                     'Ch 16.',
                     'Round 1: SC in each st and join.',
@@ -1188,7 +1205,7 @@
                 weight: 5,
                 yardage: 400,
                 hook: '6.0mm',
-                url: 'https://www.lovecrafts.com/en-us/p/crochet-plant-basket-pattern',
+                url: 'https://hobbii.com/product-patterns/free-patterns',
                 steps: [
                     'Start with a round base of SC.',
                     'Build the walls with HDC.',
@@ -1201,7 +1218,7 @@
                 weight: 3,
                 yardage: 550,
                 hook: '4.5mm',
-                url: 'https://www.yarnspirations.com/patterns/baby-cardigan',
+                url: 'https://www.yarnspirations.com/collections/patterns?filter.p.m.global.craft=Crochet&filter.v.price.gte=0&filter.v.price.lte=0',
                 steps: [
                     'Work back panel and two front panels separately.',
                     'Seam shoulders and sides.',
@@ -1214,7 +1231,7 @@
                 weight: 7,
                 yardage: 1000,
                 hook: '12.0mm',
-                url: 'https://www.ravelry.com/patterns/library/cozy-floor-pouf',
+                url: 'https://www.ravelry.com/patterns/search#craft=crochet&availability=free',
                 steps: [
                     'Crochet a large circle base.',
                     'Build up side walls with DC rounds.',
@@ -2338,7 +2355,7 @@
             content.innerHTML = `<ol class="list-decimal pl-5 space-y-3">${proj.steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
             const safePatternUrl = buildWorkingPatternLink(proj.url, `${proj.name} crochet pattern`);
             if (safePatternUrl) {
-                content.innerHTML += `<div class="mt-6"><a href="${safePatternUrl}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">View full pattern online</a></div>`;
+                content.innerHTML += `<div class="mt-6"><a href="${safePatternUrl}" onclick="return forceNavigate(event)" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">View full pattern online</a></div>`;
             }
             document.getElementById('pattern-modal').classList.remove('hidden-section');
 
