@@ -820,6 +820,129 @@
             return `https://cse.google.com/cse?cx=b59be96d69fb14f00#${hash}`;
         }
 
+        const yarniverseTrustedSourceUrls = [
+            'https://www.ravelry.com/',
+            'https://www.allfreecrochet.com/',
+            'https://www.yarnspirations.com/',
+            'https://www.lionbrand.com/',
+            'https://www.garnstudio.com/',
+            'https://www.lovecrafts.com/',
+            'https://hobbii.com/',
+            'https://www.ribblr.com/',
+            'https://www.mamainastitch.com/',
+            'https://www.eandpcrochet.com/',
+            'https://www.mooglyblog.com/',
+            'https://www.allaboutami.com/',
+            'https://makeanddocrew.com/',
+            'https://www.sewrella.com/',
+            'https://www.1dogwoof.com/',
+            'https://attic24.typepad.com/',
+            'https://www.5littlemonsters.com/',
+            'https://www.petalstopicots.com/',
+            'https://www.repeatcrafterme.com/',
+            'https://www.whistleandivy.com/',
+            'https://www.daisycottagedesigns.net/',
+            'https://www.hopefulhoney.com/',
+            'https://www.handsoccupied.com/',
+            'https://fiberfluxblog.com/',
+            'https://pattern-paradise.com/',
+            'https://undergroundcrafter.com/',
+            'https://www.creamofthecropcrochet.com/',
+            'https://poshpoochdesignsdogclothes.blogspot.com/',
+            'https://www.elkstudiohandcraftedcrochetdesigns.com/',
+            'https://crochetkim.com/',
+            'https://dearestdebi.com/',
+            'https://stitchesnscraps.com/',
+            'https://snappy-tots.com/',
+            'https://www.beatriceryandesigns.com/',
+            'https://persialou.com/',
+            'https://www.crochetforyoublog.com/',
+            'https://beacrafter.com/',
+            'https://www.thecountrywillows.com/',
+            'https://americancrochet.com/',
+            'https://jessieathome.com/',
+            'https://ambassadorcrochet.com/',
+            'https://kirstenhollowaydesigns.com/',
+            'https://oombawkadesigncrochet.com/',
+            'https://crochetncreate.com/',
+            'https://www.knotyournanascrochet.com/',
+            'https://designsbydiligence.blogspot.com/',
+            'https://www.yarnhookneedles.com/',
+            'https://www.cuteandcozycrochet.com/',
+            'https://divinedebris.com/',
+            'https://theunraveledmitten.com/',
+            'https://www.mypicot.com/',
+            'https://www.simplethingscrochet.com/',
+            'https://tlycblog.com/',
+            'https://www.bhookedcrochet.com/',
+            'https://www.cococrochetlee.com/',
+            'https://hearthookhome.com/',
+            'https://www.mariasblueyarn.com/',
+            'https://www.nickishomemadecrafts.com/',
+            'https://www.leftinknots.com/',
+            'https://www.acrochetedsimplicity.com/',
+            'https://www.sweetsofties.com/',
+            'https://www.spinyarnstudio.com/',
+            'https://www.crochet365knittoo.com/',
+            'https://www.stitching-together.com/',
+            'https://www.craftingontheglow.com/',
+            'https://www.desertblossomcrafts.com/',
+            'https://www.jennyandteddy.com/',
+            'https://www.reginasoarescrochet.com/',
+            'https://www.goldenlucycrafts.com/',
+            'https://www.crochetbecreative.com/',
+            'https://www.lillabjorncrochet.com/',
+            'https://www.hookedbyrobin.com/',
+            'https://www.ravelry.com/patterns/search#craft=crochet&availability=free',
+            'https://www.yarnspirations.com/collections/patterns?filter.p.m.global.craft=Crochet&filter.v.price.gte=0&filter.v.price.lte=0',
+            'https://www.lionbrand.com/collections/crochet-patterns?filter.v.price.gte=0&filter.v.price.lte=0',
+            'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns',
+            'https://hobbii.com/product-patterns/free-patterns',
+            'https://www.garnstudio.com/search.php?c=crochet&lang=en',
+            'https://www.allfreecrochet.com/Beginner-Crochet',
+            'https://www.allfreecrochet.com/Crochet-Afghans',
+            'https://www.allfreecrochet.com/Crochet-Hats-and-Baby-Hats',
+            'https://www.allfreecrochet.com/Amigurumi',
+            'https://www.allfreecrochet.com/Crochet-Sweaters',
+            'https://www.allfreecrochet.com/Crochet-Bags-and-Totes',
+            'https://www.allfreecrochet.com/Crochet-Granny-Square-Patterns'
+        ];
+
+        function getTrustedSourceItems() {
+            const seen = new Set();
+            const items = [];
+
+            yarniverseTrustedSourceUrls.forEach(urlValue => {
+                try {
+                    const parsed = new URL(urlValue);
+                    const host = parsed.hostname.replace(/^www\./, '');
+                    if (!host || seen.has(host)) return;
+                    seen.add(host);
+                    items.push({
+                        host,
+                        label: host,
+                        url: parsed.origin
+                    });
+                } catch (err) {
+                    // Ignore malformed source URLs.
+                }
+            });
+
+            return items;
+        }
+
+        function buildTrustedSourceResults(query, limit = 10) {
+            const items = getTrustedSourceItems();
+            return items.slice(0, limit).map(item => {
+                const sourceQuery = `${query} site:${item.host}`;
+                return {
+                    title: `Search ${item.label}`,
+                    site: 'Trusted source',
+                    url: buildYarniverseCseUrl(sourceQuery)
+                };
+            });
+        }
+
         function buildWorkingPatternLink(patternTitle, fallbackQuery) {
             const searchQuery = [patternTitle, 'crochet pattern', fallbackQuery]
                 .filter(Boolean)
@@ -868,6 +991,20 @@
                             <p class="text-xs text-gray-400">${escapeHtml(item.site || 'Yarniverse')} • verified search link</p>
                         </div>
                         <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="shrink-0 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
+                    `;
+                    resultsRoot.appendChild(card);
+                });
+
+                const trustedSourceResults = buildTrustedSourceResults(query, 12);
+                trustedSourceResults.forEach(item => {
+                    const card = document.createElement('div');
+                    card.className = 'glass p-4 rounded-lg flex items-start justify-between gap-4 border border-white/10';
+                    card.innerHTML = `
+                        <div class="min-w-0">
+                            <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title)}</p>
+                            <p class="text-xs text-gray-400">${escapeHtml(item.site)} • ${escapeHtml(item.title.replace(/^Search\s+/i, '').toLowerCase())}</p>
+                        </div>
+                        <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="shrink-0 inline-block bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
                     `;
                     resultsRoot.appendChild(card);
                 });
