@@ -915,41 +915,48 @@
             yarniverseTrustedSourceUrls.forEach(urlValue => {
                 try {
                     const parsed = new URL(urlValue);
+                    const normalizedUrl = parsed.toString();
+                    if (!normalizedUrl || seen.has(normalizedUrl)) return;
+                    seen.add(normalizedUrl);
+
                     const host = parsed.hostname.replace(/^www\./, '');
-                    if (!host || seen.has(host)) return;
-                    seen.add(host);
+                    const isPatternPath = parsed.pathname && parsed.pathname !== '/';
+                    const pathLabel = parsed.pathname && parsed.pathname !== '/'
+                        ? parsed.pathname.replace(/^\//, '').replace(/[-_]/g, ' ')
+                        : 'homepage';
+
                     items.push({
                         host,
-                        label: host,
-                        url: parsed.origin
+                        isPatternPath,
+                        label: `${host} - ${pathLabel}`,
+                        url: normalizedUrl
                     });
                 } catch (err) {
                     // Ignore malformed source URLs.
                 }
             });
 
-            return items;
+            return items.sort((a, b) => {
+                if (a.isPatternPath !== b.isPatternPath) {
+                    return a.isPatternPath ? -1 : 1;
+                }
+                return a.host.localeCompare(b.host);
+            });
         }
 
-        function buildTrustedSourceResults(query, limit = 10) {
+        function buildTrustedSourceResults(limit = 10) {
             const items = getTrustedSourceItems();
             return items.slice(0, limit).map(item => {
-                const sourceQuery = `${query} site:${item.host}`;
                 return {
-                    title: `Search ${item.label}`,
+                    title: `Open ${item.label}`,
                     site: 'Trusted source',
-                    url: buildYarniverseCseUrl(sourceQuery)
+                    url: item.url
                 };
             });
         }
 
-        function buildWorkingPatternLink(patternTitle, fallbackQuery) {
-            const searchQuery = [patternTitle, 'crochet pattern', fallbackQuery]
-                .filter(Boolean)
-                .join(' ')
-                .replace(/\s+/g, ' ')
-                .trim();
-            return buildYarniverseCseUrl(searchQuery);
+        function buildWorkingPatternLink(rawUrl, fallbackQuery) {
+            return normalizePatternUrl(rawUrl, fallbackQuery);
         }
 
         async function renderYarniverseSearchResults(container, query) {
@@ -980,7 +987,7 @@
 
                 resultsRoot.innerHTML = '';
                 finalResults.slice(0, 12).forEach(item => {
-                    const safeUrl = buildWorkingPatternLink(item.title, query);
+                    const safeUrl = buildWorkingPatternLink(item.url, query);
                     if (!safeUrl) return;
 
                     const card = document.createElement('div');
@@ -988,21 +995,21 @@
                     card.innerHTML = `
                         <div class="min-w-0">
                             <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title || 'Pattern link')}</p>
-                            <p class="text-xs text-gray-400">${escapeHtml(item.site || 'Yarniverse')} • verified search link</p>
+                            <p class="text-xs text-gray-400">${escapeHtml(item.site || 'Yarniverse')} • ${escapeHtml(getDomainLabel(safeUrl))}</p>
                         </div>
                         <a href="${safeUrl}" class="shrink-0 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
                     `;
                     resultsRoot.appendChild(card);
                 });
 
-                const trustedSourceResults = buildTrustedSourceResults(query, 12);
+                const trustedSourceResults = buildTrustedSourceResults(24);
                 trustedSourceResults.forEach(item => {
                     const card = document.createElement('div');
                     card.className = 'glass p-4 rounded-lg flex items-start justify-between gap-4 border border-white/10';
                     card.innerHTML = `
                         <div class="min-w-0">
                             <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title)}</p>
-                            <p class="text-xs text-gray-400">${escapeHtml(item.site)} • ${escapeHtml(item.title.replace(/^Search\s+/i, '').toLowerCase())}</p>
+                            <p class="text-xs text-gray-400">${escapeHtml(item.site)} • ${escapeHtml(getDomainLabel(item.url))}</p>
                         </div>
                         <a href="${item.url}" class="shrink-0 inline-block bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
                     `;
@@ -2329,7 +2336,7 @@
             document.getElementById('modal-stats').innerText = `Weight ${proj.weight} • ${proj.yardage} yds required • ${proj.hook} hook`;
             const content = document.getElementById('modal-content');
             content.innerHTML = `<ol class="list-decimal pl-5 space-y-3">${proj.steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
-            const safePatternUrl = buildWorkingPatternLink(proj.name, `${proj.name} crochet pattern`);
+            const safePatternUrl = buildWorkingPatternLink(proj.url, `${proj.name} crochet pattern`);
             if (safePatternUrl) {
                 content.innerHTML += `<div class="mt-6"><a href="${safePatternUrl}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">View full pattern online</a></div>`;
             }
