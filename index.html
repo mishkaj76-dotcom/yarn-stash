@@ -828,12 +828,23 @@
                         <p class="font-semibold text-white">Powered by Google Custom Search</p>
                         <p class="text-xs text-gray-400 mt-1">Search patterns for: ${safeQuery}</p>
                     </div>
-                    <div class="glass p-3 rounded-lg">
-                        <div class="gcse-search"></div>
+                    <div class="glass p-3 rounded-lg min-h-[360px]">
+                        <div class="gcse-search" data-query="${safeQuery}"></div>
                     </div>
-                    <a href="${buildYarniverseCseUrl(query)}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Open full search in a new tab</a>
                 </div>
             `;
+
+            const searchBox = container.querySelector('.gcse-search');
+            if (searchBox && window.google?.search?.cse?.element) {
+                const instanceName = `yarniverse-inline-${Math.random().toString(36).slice(2, 8)}`;
+                searchBox.setAttribute('data-gname', instanceName);
+                searchBox.innerHTML = `<div class="gcse-searchresults-only" data-gname="${instanceName}"></div>`;
+                window.google.search.cse.element.render({
+                    gname: instanceName,
+                    div: searchBox.querySelector('.gcse-searchresults-only')
+                });
+                window.google.search.cse.element.execute(query);
+            }
         }
 
         const curatedPatterns = [
@@ -2266,4 +2277,3 @@
     </div>
 </body>
 </html>
-
