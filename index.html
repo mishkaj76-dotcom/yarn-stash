@@ -795,6 +795,25 @@
             }[char]));
         }
 
+        function normalizePatternUrl(rawUrl, fallbackQuery) {
+            const fallback = fallbackQuery ? buildYarniverseCseUrl(fallbackQuery) : null;
+            if (!rawUrl) return fallback;
+
+            const trimmed = String(rawUrl).trim();
+            if (!trimmed || trimmed === '#' || trimmed.startsWith('javascript:') || trimmed.startsWith('mailto:') || trimmed.startsWith('tel:') || trimmed.startsWith('data:') || trimmed.startsWith('about:')) {
+                return fallback;
+            }
+
+            try {
+                const parsed = new URL(trimmed, 'https://www.google.com');
+                if (!['http:', 'https:'].includes(parsed.protocol)) return fallback;
+                if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') return fallback;
+                return parsed.toString();
+            } catch (err) {
+                return fallback;
+            }
+        }
+
         function buildYarniverseCseUrl(query) {
             const normalizedQuery = (query || '').trim();
             const hash = `gsc.tab=0&gsc.sort=&gsc.q=${encodeURIComponent(normalizedQuery)}&gsc.page=1`;
@@ -2153,8 +2172,9 @@
             document.getElementById('modal-stats').innerText = `Weight ${proj.weight} • ${proj.yardage} yds required • ${proj.hook} hook`;
             const content = document.getElementById('modal-content');
             content.innerHTML = `<ol class="list-decimal pl-5 space-y-3">${proj.steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
-            if (proj.url) {
-                content.innerHTML += `<div class="mt-6"><a href="${proj.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">View full pattern online</a></div>`;
+            const safePatternUrl = normalizePatternUrl(proj.url, `${proj.name} crochet pattern`);
+            if (safePatternUrl) {
+                content.innerHTML += `<div class="mt-6"><a href="${safePatternUrl}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">View full pattern online</a></div>`;
             }
             document.getElementById('pattern-modal').classList.remove('hidden-section');
 
