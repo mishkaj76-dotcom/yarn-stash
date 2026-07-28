@@ -990,7 +990,7 @@
                             <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title || 'Pattern link')}</p>
                             <p class="text-xs text-gray-400">${escapeHtml(item.site || 'Yarniverse')} • verified search link</p>
                         </div>
-                        <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="shrink-0 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
+                        <a href="${safeUrl}" class="shrink-0 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
                     `;
                     resultsRoot.appendChild(card);
                 });
@@ -1004,7 +1004,7 @@
                             <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title)}</p>
                             <p class="text-xs text-gray-400">${escapeHtml(item.site)} • ${escapeHtml(item.title.replace(/^Search\s+/i, '').toLowerCase())}</p>
                         </div>
-                        <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="shrink-0 inline-block bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
+                        <a href="${item.url}" class="shrink-0 inline-block bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
                     `;
                     resultsRoot.appendChild(card);
                 });
@@ -2331,7 +2331,7 @@
             content.innerHTML = `<ol class="list-decimal pl-5 space-y-3">${proj.steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
             const safePatternUrl = buildWorkingPatternLink(proj.name, `${proj.name} crochet pattern`);
             if (safePatternUrl) {
-                content.innerHTML += `<div class="mt-6"><a href="${safePatternUrl}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">View full pattern online</a></div>`;
+                content.innerHTML += `<div class="mt-6"><a href="${safePatternUrl}" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">View full pattern online</a></div>`;
             }
             document.getElementById('pattern-modal').classList.remove('hidden-section');
 
