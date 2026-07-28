@@ -908,49 +908,59 @@
             'https://www.allfreecrochet.com/Miscellaneous-Crochet/Shift-Granny-Square-153910'
         ];
 
-        function getTrustedSourceItems() {
-            const seen = new Set();
-            const items = [];
+        function getTrustedSourceHosts() {
+            const seenHosts = new Set();
+            const hosts = [];
 
             yarniverseTrustedSourceUrls.forEach(urlValue => {
                 try {
                     const parsed = new URL(urlValue);
-                    const normalizedUrl = parsed.toString();
-                    if (!normalizedUrl || seen.has(normalizedUrl)) return;
-                    seen.add(normalizedUrl);
-
-                    const host = parsed.hostname.replace(/^www\./, '');
-                    const isPatternPath = parsed.pathname && parsed.pathname !== '/';
-                    const pathLabel = parsed.pathname && parsed.pathname !== '/'
-                        ? parsed.pathname.replace(/^\//, '').replace(/[-_]/g, ' ')
-                        : 'homepage';
-
-                    items.push({
-                        host,
-                        isPatternPath,
-                        label: `${host} - ${pathLabel}`,
-                        url: normalizedUrl
-                    });
+                    const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+                    if (!host || seenHosts.has(host)) return;
+                    seenHosts.add(host);
+                    hosts.push(host);
                 } catch (err) {
                     // Ignore malformed source URLs.
                 }
             });
 
-            return items.sort((a, b) => {
-                if (a.isPatternPath !== b.isPatternPath) {
-                    return a.isPatternPath ? -1 : 1;
-                }
-                return a.host.localeCompare(b.host);
-            });
+            return hosts.sort((a, b) => a.localeCompare(b));
         }
 
-        function buildTrustedSourceResults(limit = 10) {
-            const items = getTrustedSourceItems();
-            return items.slice(0, limit).map(item => {
+        function buildSourceSearchUrl(host, query) {
+            const encodedQuery = encodeURIComponent(`${query} crochet pattern`);
+
+            if (host === 'ravelry.com') {
+                return `https://www.ravelry.com/patterns/search#craft=crochet&query=${encodeURIComponent(query)}`;
+            }
+            if (host === 'allfreecrochet.com') {
+                return `https://www.allfreecrochet.com/search?search_term=${encodedQuery}`;
+            }
+            if (host === 'yarnspirations.com' || host === 'lionbrand.com' || host === 'hobbii.com' || host === 'ribblr.com') {
+                return `https://www.${host}/search?q=${encodedQuery}`;
+            }
+            if (host === 'lovecrafts.com') {
+                return `https://www.lovecrafts.com/en-us/search?query=${encodedQuery}`;
+            }
+            if (host === 'garnstudio.com') {
+                return `https://www.garnstudio.com/search.php?lang=en&c=crochet&q=${encodeURIComponent(query)}`;
+            }
+
+            if (host.endsWith('blogspot.com') || host.endsWith('typepad.com')) {
+                return `https://${host}/search?q=${encodedQuery}`;
+            }
+
+            return `https://www.${host}/?s=${encodedQuery}`;
+        }
+
+        function buildTrustedSourceResults(query) {
+            const hosts = getTrustedSourceHosts();
+            return hosts.map(host => {
                 return {
-                    title: `Open ${item.label}`,
+                    title: `Search ${host}`,
                     site: 'Trusted source',
-                    url: item.url
+                    host,
+                    url: buildSourceSearchUrl(host, query)
                 };
             });
         }
@@ -1019,14 +1029,14 @@
                     resultsRoot.appendChild(card);
                 });
 
-                const trustedSourceResults = buildTrustedSourceResults(24);
+                const trustedSourceResults = buildTrustedSourceResults(query);
                 trustedSourceResults.forEach(item => {
                     const card = document.createElement('div');
                     card.className = 'glass p-4 rounded-lg flex items-start justify-between gap-4 border border-white/10';
                     card.innerHTML = `
                         <div class="min-w-0">
                             <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title)}</p>
-                            <p class="text-xs text-gray-400">${escapeHtml(item.site)} • ${escapeHtml(getDomainLabel(item.url))}</p>
+                            <p class="text-xs text-gray-400">${escapeHtml(item.site)} • ${escapeHtml(item.host)}</p>
                         </div>
                         <a href="${item.url}" onclick="return forceNavigate(event)" class="shrink-0 inline-block bg-emerald-500 hover:bg-emerald-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
                     `;
