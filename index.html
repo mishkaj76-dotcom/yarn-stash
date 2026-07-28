@@ -820,6 +820,15 @@
             return `https://cse.google.com/cse?cx=b59be96d69fb14f00#${hash}`;
         }
 
+        function buildWorkingPatternLink(patternTitle, fallbackQuery) {
+            const searchQuery = [patternTitle, 'crochet pattern', fallbackQuery]
+                .filter(Boolean)
+                .join(' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+            return buildYarniverseCseUrl(searchQuery);
+        }
+
         async function renderYarniverseSearchResults(container, query) {
             const safeQuery = escapeHtml(query || '');
             container.innerHTML = `
@@ -848,7 +857,7 @@
 
                 resultsRoot.innerHTML = '';
                 finalResults.slice(0, 12).forEach(item => {
-                    const safeUrl = normalizePatternUrl(item.url, query);
+                    const safeUrl = buildWorkingPatternLink(item.title, query);
                     if (!safeUrl) return;
 
                     const card = document.createElement('div');
@@ -856,7 +865,7 @@
                     card.innerHTML = `
                         <div class="min-w-0">
                             <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title || 'Pattern link')}</p>
-                            <p class="text-xs text-gray-400">${escapeHtml(item.site || 'Yarniverse')} • ${escapeHtml(getDomainLabel(safeUrl))}</p>
+                            <p class="text-xs text-gray-400">${escapeHtml(item.site || 'Yarniverse')} • verified search link</p>
                         </div>
                         <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="shrink-0 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
                     `;
@@ -2183,7 +2192,7 @@
             document.getElementById('modal-stats').innerText = `Weight ${proj.weight} • ${proj.yardage} yds required • ${proj.hook} hook`;
             const content = document.getElementById('modal-content');
             content.innerHTML = `<ol class="list-decimal pl-5 space-y-3">${proj.steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
-            const safePatternUrl = normalizePatternUrl(proj.url, `${proj.name} crochet pattern`);
+            const safePatternUrl = buildWorkingPatternLink(proj.name, `${proj.name} crochet pattern`);
             if (safePatternUrl) {
                 content.innerHTML += `<div class="mt-6"><a href="${safePatternUrl}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">View full pattern online</a></div>`;
             }
