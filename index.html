@@ -766,15 +766,84 @@
             'Medium (4)', 'Bulky (5)', 'Super Bulky (6)', 'Jumbo (7)'
         ];
 
+        function normalizeHookSize(hookValue) {
+            if (hookValue === null || hookValue === undefined) return '';
+            const raw = String(hookValue).trim().toLowerCase();
+            if (!raw) return '';
+            const numeric = raw.match(/\d+(?:\.\d+)?/);
+            return numeric ? `${numeric[0]}mm` : raw.replace(/\s+/g, ' ');
+        }
+
         function buildYarnQuery(yarn) {
             return [
                 yarn.brand,
                 yarn.color,
                 yarn.weight !== null && yarn.weight !== undefined ? `${weightLabels[yarn.weight]}` : '',
-                yarn.hook ? `${yarn.hook}mm` : '',
+                normalizeHookSize(yarn.hook),
                 yarn.yardage ? `${yarn.yardage} yards` : '',
                 'crochet pattern'
             ].filter(Boolean).join(' ');
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[char]));
+        }
+
+        function buildYarniverseCseUrl(query) {
+            const normalizedQuery = (query || '').trim();
+            const hash = `gsc.tab=0&gsc.sort=&gsc.q=${encodeURIComponent(normalizedQuery)}&gsc.page=1`;
+            return `https://cse.google.com/cse?cx=b59be96d69fb14f00#${hash}`;
+        }
+
+        function renderYarniverseSearchResults(container, query) {
+            const safeQuery = escapeHtml(query || '');
+            const widgetId = `yarniverse-cse-${Math.random().toString(36).slice(2, 10)}`;
+            container.innerHTML = `
+                <div class="space-y-3">
+                    <div class="glass p-3 rounded-lg text-sm text-gray-300">
+                        <p class="font-semibold text-white">Powered by Google Custom Search</p>
+                        <p class="text-xs text-gray-400 mt-1">Showing pattern results for: ${safeQuery}</p>
+                    </div>
+                    <div id="${widgetId}" class="min-h-[360px] rounded-lg border border-white/10 bg-white/5 p-3"></div>
+                    <a href="${buildYarniverseCseUrl(query)}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Open full search in a new tab</a>
+                </div>
+            `;
+
+            const widgetRoot = document.getElementById(widgetId);
+            if (!widgetRoot) return;
+
+            const loadCseWidget = () => {
+                if (window.google && window.google.search && window.google.search.cse && window.google.search.cse.element) {
+                    const instanceName = `yarniverse-${Math.random().toString(36).slice(2, 8)}`;
+                    widgetRoot.innerHTML = `<div class="gcse-searchresults-only" data-gname="${instanceName}"></div>`;
+                    window.google.search.cse.element.render({
+                        gname: instanceName,
+                        div: widgetRoot.querySelector('.gcse-searchresults-only')
+                    });
+                    window.google.search.cse.element.execute(query);
+                    return;
+                }
+
+                const existingScript = document.querySelector('script[src*="cse.google.com/cse.js"]');
+                if (existingScript) {
+                    existingScript.addEventListener('load', () => loadCseWidget(), { once: true });
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = 'https://cse.google.com/cse.js?cx=b59be96d69fb14f00';
+                script.async = true;
+                script.onload = () => loadCseWidget();
+                document.head.appendChild(script);
+            };
+
+            loadCseWidget();
         }
 
         const curatedPatterns = [
@@ -2129,43 +2198,8 @@
 
         async function loadYarniversePatternResults(yarn, container) {
             const query = buildYarnQuery(yarn);
-            container.innerHTML = '<div class="text-sm text-gray-400">Searching the Yarniverse across the entire internet...</div>';
-
-            try {
-                const results = await searchMultipleSources(query);
-                container.innerHTML = '';
-
-                if (!results || results.length === 0) {
-                    container.innerHTML = `
-                        <div class="glass p-6 rounded-lg text-center">
-                            <p class="text-gray-300 mb-4">No patterns found for: <strong>${query}</strong></p>
-                            <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Search Google directly</a>
-                        </div>
-                    `;
-                    return;
-                }
-
-                results.forEach(item => {
-                    const resultCard = document.createElement('div');
-                    resultCard.className = 'glass p-4 rounded-lg flex flex-col gap-3';
-                    resultCard.innerHTML = `
-                        <div>
-                            <p class="font-semibold text-lg">${item.title}</p>
-                            <p class="text-xs text-gray-400">${item.site} • ${getDomainLabel(item.url)}</p>
-                        </div>
-                        <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Open pattern</a>
-                    `;
-                    container.appendChild(resultCard);
-                });
-            } catch (err) {
-                console.error('Yarniverse search error:', err);
-                container.innerHTML = `
-                    <div class="glass p-6 rounded-lg text-center">
-                        <p class="text-gray-300 mb-4">Search error. Try searching directly:</p>
-                        <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Search Google</a>
-                    </div>
-                `;
-            }
+            container.innerHTML = '<div class="text-sm text-gray-400">Loading the Google Custom Search experience...</div>';
+            renderYarniverseSearchResults(container, query);
         }
 
         async function findPatternsForYarn(index) {
@@ -2174,46 +2208,10 @@
             document.getElementById('pattern-search-desc').innerHTML = searchDesc;
 
             const patternLinks = document.getElementById('pattern-links');
-            patternLinks.innerHTML = '<div class="text-sm text-gray-400">Searching across the entire internet...</div>';
+            patternLinks.innerHTML = '<div class="text-sm text-gray-400">Loading the Google Custom Search experience...</div>';
 
             const query = buildYarnQuery(yarn);
-            try {
-                const results = await searchMultipleSources(query);
-                patternLinks.innerHTML = '';
-                
-                if (!results || results.length === 0) {
-                    patternLinks.innerHTML = `
-                        <div class="col-span-full text-center py-6 glass">
-                            <p class="text-gray-300 mb-4">No patterns found. Try searching directly:</p>
-                            <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Search Google</a>
-                        </div>
-                    `;
-                } else {
-                    results.forEach(item => {
-                        const card = document.createElement('div');
-                        card.className = 'glass p-4 rounded-lg flex items-start justify-between';
-                        card.innerHTML = `
-                            <div class="pr-4">
-                                <p class="font-semibold text-lg">${item.title}</p>
-                                <p class="text-xs text-gray-400">${item.site} • ${getDomainLabel(item.url)}</p>
-                            </div>
-                            <div class="flex flex-col items-end gap-2">
-                                <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-sm font-semibold">Visit link for pattern!</a>
-                            </div>
-                        `;
-                        patternLinks.appendChild(card);
-                    });
-                }
-            } catch (err) {
-                console.error('Pattern search error:', err);
-                patternLinks.innerHTML = `
-                    <div class="col-span-full text-center py-6 glass">
-                        <p class="text-gray-300 mb-4">Search error. Try searching directly:</p>
-                        <a href="https://www.google.com/search?q=${encodeURIComponent(query)}" target="_blank" rel="noopener noreferrer" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">Search Google</a>
-                    </div>
-                `;
-            }
-
+            renderYarniverseSearchResults(patternLinks, query);
             document.getElementById('patterns-modal').classList.remove('hidden-section');
         }
 
