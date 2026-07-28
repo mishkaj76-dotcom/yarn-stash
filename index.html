@@ -820,30 +820,59 @@
             return `https://cse.google.com/cse?cx=b59be96d69fb14f00#${hash}`;
         }
 
-        function renderYarniverseSearchResults(container, query) {
+        async function renderYarniverseSearchResults(container, query) {
             const safeQuery = escapeHtml(query || '');
             container.innerHTML = `
                 <div class="space-y-3">
                     <div class="glass p-3 rounded-lg text-sm text-gray-300">
-                        <p class="font-semibold text-white">Powered by Google Custom Search</p>
-                        <p class="text-xs text-gray-400 mt-1">Search patterns for: ${safeQuery}</p>
+                        <p class="font-semibold text-white">Yarniverse Pattern Results</p>
+                        <p class="text-xs text-gray-400 mt-1">Top links for: ${safeQuery}</p>
                     </div>
-                    <div class="glass p-3 rounded-lg min-h-[360px]">
-                        <div class="gcse-search" data-query="${safeQuery}"></div>
-                    </div>
+                    <div id="yarniverse-live-results" class="space-y-3"></div>
                 </div>
             `;
 
-            const searchBox = container.querySelector('.gcse-search');
-            if (searchBox && window.google?.search?.cse?.element) {
-                const instanceName = `yarniverse-inline-${Math.random().toString(36).slice(2, 8)}`;
-                searchBox.setAttribute('data-gname', instanceName);
-                searchBox.innerHTML = `<div class="gcse-searchresults-only" data-gname="${instanceName}"></div>`;
-                window.google.search.cse.element.render({
-                    gname: instanceName,
-                    div: searchBox.querySelector('.gcse-searchresults-only')
+            const resultsRoot = container.querySelector('#yarniverse-live-results');
+            if (!resultsRoot) return;
+
+            resultsRoot.innerHTML = '<div class="glass p-3 rounded-lg text-sm text-gray-400">Searching now...</div>';
+
+            try {
+                const fetched = await searchMultipleSources(query);
+                const finalResults = (fetched && fetched.length) ? fetched : getCuratedPatternFallback(query);
+
+                if (!finalResults || finalResults.length === 0) {
+                    resultsRoot.innerHTML = '<div class="glass p-3 rounded-lg text-sm text-gray-400">No pattern links found yet. Try another yarn.</div>';
+                    return;
+                }
+
+                resultsRoot.innerHTML = '';
+                finalResults.slice(0, 12).forEach(item => {
+                    const safeUrl = normalizePatternUrl(item.url, query);
+                    if (!safeUrl) return;
+
+                    const card = document.createElement('div');
+                    card.className = 'glass p-4 rounded-lg flex items-start justify-between gap-4';
+                    card.innerHTML = `
+                        <div class="min-w-0">
+                            <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title || 'Pattern link')}</p>
+                            <p class="text-xs text-gray-400">${escapeHtml(item.site || 'Yarniverse')} • ${escapeHtml(getDomainLabel(safeUrl))}</p>
+                        </div>
+                        <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="shrink-0 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
+                    `;
+                    resultsRoot.appendChild(card);
                 });
-                window.google.search.cse.element.execute(query);
+
+                if (!resultsRoot.children.length) {
+                    resultsRoot.innerHTML = '<div class="glass p-3 rounded-lg text-sm text-gray-400">No valid links found from this query.</div>';
+                }
+            } catch (err) {
+                console.error('Yarniverse search error:', err);
+                resultsRoot.innerHTML = `
+                    <div class="text-sm text-gray-300">
+                        Could not load live results right now. Please try again in a moment.
+                    </div>
+                `;
             }
         }
 
@@ -2201,7 +2230,7 @@
         async function loadYarniversePatternResults(yarn, container) {
             const query = buildYarnQuery(yarn);
             container.innerHTML = '<div class="text-sm text-gray-400">Loading the Google Custom Search experience...</div>';
-            renderYarniverseSearchResults(container, query);
+            await renderYarniverseSearchResults(container, query);
         }
 
         async function findPatternsForYarn(index) {
@@ -2213,7 +2242,7 @@
             patternLinks.innerHTML = '<div class="text-sm text-gray-400">Loading the Google Custom Search experience...</div>';
 
             const query = buildYarnQuery(yarn);
-            renderYarniverseSearchResults(patternLinks, query);
+            await renderYarniverseSearchResults(patternLinks, query);
             document.getElementById('patterns-modal').classList.remove('hidden-section');
         }
 
