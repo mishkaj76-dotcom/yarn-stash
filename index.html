@@ -774,8 +774,34 @@
             return numeric ? `${numeric[0]}mm` : raw.replace(/\s+/g, ' ');
         }
 
+        function buildPatternSearchQuery(rawQuery) {
+            const source = String(rawQuery || '').trim();
+            const seen = new Set();
+            const terms = [];
+
+            const addTerm = (value) => {
+                const normalized = String(value || '').trim().toLowerCase();
+                if (!normalized) return;
+                const cleaned = normalized.replace(/[^a-z0-9]+/g, ' ').trim();
+                if (!cleaned) return;
+                cleaned.split(/\s+/).forEach(token => {
+                    if (!token || ['and', 'the', 'for', 'with', 'a', 'an', 'of', 'from', 'in', 'on', 'to', 'at', 'my', 'using'].includes(token)) return;
+                    if (seen.has(token)) return;
+                    seen.add(token);
+                    terms.push(token);
+                });
+            };
+
+            if (source) {
+                addTerm(source);
+            }
+
+            ['crochet', 'pattern', 'color', 'hook'].forEach(addTerm);
+            return terms.join(' ');
+        }
+
         function buildYarnQuery(yarn) {
-            return [
+            const baseQuery = [
                 yarn.brand,
                 yarn.color,
                 yarn.weight !== null && yarn.weight !== undefined ? `${weightLabels[yarn.weight]}` : '',
@@ -783,6 +809,8 @@
                 yarn.yardage ? `${yarn.yardage} yards` : '',
                 'crochet pattern'
             ].filter(Boolean).join(' ');
+
+            return buildPatternSearchQuery(baseQuery);
         }
 
         function escapeHtml(value) {
@@ -815,7 +843,7 @@
         }
 
         function buildYarniverseCseUrl(query) {
-            const normalizedQuery = (query || '').trim();
+            const normalizedQuery = buildPatternSearchQuery(query || '');
             const hash = `gsc.tab=0&gsc.sort=&gsc.q=${encodeURIComponent(normalizedQuery)}&gsc.page=1`;
             return `https://cse.google.com/cse?cx=b59be96d69fb14f00#${hash}`;
         }
@@ -928,10 +956,11 @@
         }
 
         function buildSourceSearchUrl(host, query) {
-            const encodedQuery = encodeURIComponent(`${query} crochet pattern`);
+            const searchQuery = buildPatternSearchQuery(query);
+            const encodedQuery = encodeURIComponent(searchQuery);
 
             if (host === 'ravelry.com') {
-                return `https://www.ravelry.com/patterns/search#craft=crochet&query=${encodeURIComponent(query)}`;
+                return `https://www.ravelry.com/patterns/search#craft=crochet&query=${encodeURIComponent(searchQuery)}`;
             }
             if (host === 'allfreecrochet.com') {
                 return `https://www.allfreecrochet.com/search?search_term=${encodedQuery}`;
@@ -943,7 +972,7 @@
                 return `https://www.lovecrafts.com/en-us/search?query=${encodedQuery}`;
             }
             if (host === 'garnstudio.com') {
-                return `https://www.garnstudio.com/search.php?lang=en&c=crochet&q=${encodeURIComponent(query)}`;
+                return `https://www.garnstudio.com/search.php?lang=en&c=crochet&q=${encodeURIComponent(searchQuery)}`;
             }
 
             if (host.endsWith('blogspot.com') || host.endsWith('typepad.com')) {
