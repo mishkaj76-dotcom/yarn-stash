@@ -2077,6 +2077,7 @@
         }
 
         let pendingCommunityImage = '';
+        const pendingChallengeReplyImages = {};
 
         function openCommunity() {
             const feed = document.getElementById('community-feed');
@@ -2204,17 +2205,17 @@
                 </div>
             ` : filtered.map(challenge => {
                 const participants = challenge.participants || [];
+                const threadPosts = challenge.threadPosts || [];
                 const hasJoined = participants.includes(currentUser);
                 const isOwner = challenge.author === currentUser;
-                const canJoin = currentFollows.includes(challenge.author);
                 const deadlineLabel = challenge.deadline ? new Date(challenge.deadline).toLocaleDateString() : 'No deadline';
+                const canPost = isOwner || hasJoined;
+                const pendingImage = pendingChallengeReplyImages[challenge.id] || '';
                 const action = isOwner
                     ? '<span class="text-xs font-semibold text-[#6d5142]">Your challenge</span>'
                     : hasJoined
                         ? '<span class="text-xs font-semibold text-green-700">Joined</span>'
-                        : canJoin
-                            ? `<button onclick="joinStashChallenge('${challenge.id}')" class="btn-primary px-3 py-2 rounded-xl text-sm">Join challenge</button>`
-                            : `<button onclick="toggleFollow('${challenge.author}')" class="px-3 py-2 rounded-xl text-sm border border-[#b68ba6] text-[#5f483c]">Follow ${challenge.author} to join</button>`;
+                        : `<button onclick="joinStashChallenge('${challenge.id}')" class="btn-primary px-3 py-2 rounded-xl text-sm">Join challenge</button>`;
                 return `
                     <div class="glass p-6 rounded-3xl">
                         <div class="flex items-start justify-between gap-3 mb-3">
@@ -2228,6 +2229,27 @@
                         <div class="flex flex-wrap gap-3 text-xs text-[#6d5142]">
                             <span>Deadline: ${deadlineLabel}</span>
                             <span>Participants: ${participants.length}</span>
+                        </div>
+                        <div class="mt-4 border-t border-[#eadfe8] pt-4">
+                            <p class="text-sm font-semibold text-[#2f211d] mb-2">Forum Thread</p>
+                            ${canPost ? `
+                                <textarea id="challenge-reply-text-${challenge.id}" class="w-full min-h-[90px] p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Share progress, ask a question, or post an update..."></textarea>
+                                <div class="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                    <input id="challenge-reply-image-url-${challenge.id}" type="url" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Paste image URL (optional)">
+                                    <input id="challenge-reply-image-file-${challenge.id}" type="file" accept="image/*" class="w-full p-2 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" onchange="handleChallengeReplyImageFile('${challenge.id}', this.files && this.files[0] ? this.files[0] : null)">
+                                </div>
+                                <div id="challenge-reply-preview-${challenge.id}" class="mt-2">${pendingImage ? `<img src="${pendingImage}" alt="Challenge reply preview" class="w-full rounded-2xl object-cover max-h-56">` : ''}</div>
+                                <button onclick="submitChallengeReply('${challenge.id}')" class="mt-3 btn-primary px-4 py-2 rounded-xl text-sm">Post to forum</button>
+                            ` : '<p class="text-xs text-[#6d5142]">Join this challenge to post comments and photos.</p>'}
+                            <div class="mt-4 space-y-3">
+                                ${threadPosts.length ? threadPosts.slice().sort((a, b) => b.createdAt - a.createdAt).map(post => `
+                                    <div class="rounded-2xl bg-[#fcf8fb] p-3 border border-[#eadfe8]">
+                                        <p class="text-xs text-[#6d5142]">${post.author} • ${new Date(post.createdAt).toLocaleString()}</p>
+                                        <p class="text-sm text-[#2f211d] mt-1">${escapeHtml(post.text || '')}</p>
+                                        ${(post.imageData || post.imageUrl) ? `<img src="${post.imageData || post.imageUrl}" alt="Challenge forum photo" class="mt-2 w-full rounded-2xl object-cover max-h-64">` : ''}
+                                    </div>
+                                `).join('') : '<p class="text-xs text-[#6d5142]">No comments yet. Be the first to post an update.</p>'}
+                            </div>
                         </div>
                     </div>
                 `;
@@ -2300,6 +2322,7 @@
                 prompt,
                 deadline,
                 participants: [],
+                threadPosts: [],
                 createdAt: Date.now()
             });
             saveStashChallenges(challenges);
@@ -2324,13 +2347,6 @@
                 return;
             }
 
-            const following = getFollowing();
-            const currentFollows = following[currentUser] || [];
-            if (!currentFollows.includes(challenge.author)) {
-                showToast('Follow this creator to join their challenge.');
-                return;
-            }
-
             challenge.participants = challenge.participants || [];
             if (challenge.participants.includes(currentUser)) {
                 showToast('You already joined this challenge.');
@@ -2342,6 +2358,66 @@
             renderChallengeForum();
             renderCommunityFeed();
             showToast('You joined the stash challenge!');
+        }
+
+        function handleChallengeReplyImageFile(challengeId, file) {
+            if (!file) return;
+            if (!file.type.startsWith('image/')) {
+                showToast('Please choose a valid image file.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = () => {
+                pendingChallengeReplyImages[challengeId] = reader.result;
+                const preview = document.getElementById(`challenge-reply-preview-${challengeId}`);
+                if (preview) {
+                    preview.innerHTML = `<img src="${reader.result}" alt="Challenge reply preview" class="w-full rounded-2xl object-cover max-h-56">`;
+                }
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function submitChallengeReply(challengeId) {
+            if (!currentUser) return;
+
+            const challenges = getStashChallenges();
+            const challenge = challenges.find(item => item.id === challengeId);
+            if (!challenge) return;
+
+            const participants = challenge.participants || [];
+            const isOwner = challenge.author === currentUser;
+            const hasJoined = participants.includes(currentUser);
+            if (!isOwner && !hasJoined) {
+                showToast('Join this challenge to post updates.');
+                return;
+            }
+
+            const textInput = document.getElementById(`challenge-reply-text-${challengeId}`);
+            const imageUrlInput = document.getElementById(`challenge-reply-image-url-${challengeId}`);
+            const text = textInput ? textInput.value.trim() : '';
+            const imageUrl = imageUrlInput ? imageUrlInput.value.trim() : '';
+            const imageData = pendingChallengeReplyImages[challengeId] || '';
+
+            if (!text && !imageUrl && !imageData) {
+                showToast('Add a comment or photo before posting.');
+                return;
+            }
+
+            challenge.threadPosts = challenge.threadPosts || [];
+            challenge.threadPosts.push({
+                id: `challenge-post-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                author: currentUser,
+                text,
+                imageUrl,
+                imageData,
+                createdAt: Date.now()
+            });
+
+            saveStashChallenges(challenges);
+            delete pendingChallengeReplyImages[challengeId];
+            renderChallengeForum();
+            showToast('Posted to challenge forum.');
         }
 
         function handleCommunityImageFile(file, previewElement, urlInput) {
