@@ -294,8 +294,12 @@
                     <p class="text-[#5f483c]">A fiber hub for knitters, crocheters, spinners, weavers, and dyers to share projects and patterns.</p>
                 </div>
                 <div id="community-gate" class="glass p-6 rounded-3xl mb-6">
-                    <p class="text-[#2f211d] mb-4">This space is for all fiber artists. Post your work, follow other makers, create stash challenges, and leave comments.</p>
+                    <p class="text-[#2f211d] mb-4">This space is for all fiber artists. Post your work, follow other makers, and leave comments.</p>
                     <button onclick="switchTab('community')" class="btn-primary w-full py-3 rounded-xl">Open Community</button>
+                </div>
+                <div class="glass p-5 rounded-3xl mb-6">
+                    <p class="text-sm text-[#5f483c]">Looking for challenge prompts and join buttons?</p>
+                    <button onclick="switchTab('challenges')" class="mt-3 btn-primary px-4 py-2 rounded-xl text-sm">Open Challenge Forums</button>
                 </div>
                 <div class="glass p-6 rounded-3xl mb-6">
                     <label class="block text-sm font-medium mb-3 text-[#2f211d]">Search community posts and patterns</label>
@@ -306,6 +310,18 @@
                     <div id="community-search-results" class="mt-4 space-y-3"></div>
                 </div>
                 <div id="community-feed" class="hidden-section space-y-6"></div>
+            </section>
+
+            <section id="tab-challenges" class="tab-content hidden-section animate-fade">
+                <div class="mb-8">
+                    <h2 class="text-2xl font-semibold mb-2 text-[#2f211d]">Challenge Forums</h2>
+                    <p class="text-[#5f483c]">Create stash challenges, join maker prompts, and track participation in one dedicated forum.</p>
+                </div>
+                <div id="challenges-gate" class="glass p-6 rounded-3xl mb-6">
+                    <p class="text-[#2f211d] mb-4">Sign in to publish and join challenge threads with the fiber community.</p>
+                    <button onclick="switchTab('challenges')" class="btn-primary w-full py-3 rounded-xl">Open Challenge Forums</button>
+                </div>
+                <div id="challenges-forum" class="hidden-section space-y-6"></div>
             </section>
 
             <section id="tab-profile" class="tab-content hidden-section animate-fade">
@@ -380,6 +396,12 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
                 <span class="text-[10px] font-medium">COMMUNITY</span>
+            </button>
+            <button onclick="switchTab('challenges')" class="nav-item flex flex-col items-center gap-1" id="nav-challenges">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.95a1 1 0 00.95.69h4.153c.969 0 1.371 1.24.588 1.81l-3.36 2.44a1 1 0 00-.364 1.118l1.284 3.949c.3.922-.755 1.688-1.54 1.118l-3.36-2.44a1 1 0 00-1.176 0l-3.36 2.44c-.784.57-1.838-.196-1.539-1.118l1.284-3.95a1 1 0 00-.364-1.117l-3.36-2.44c-.783-.57-.38-1.81.588-1.81h4.153a1 1 0 00.95-.69l1.285-3.95z" />
+                </svg>
+                <span class="text-[10px] font-medium">FORUMS</span>
             </button>
             <button onclick="switchTab('profile')" class="nav-item flex flex-col items-center gap-1" id="nav-profile">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2080,6 +2102,84 @@
             renderCommunityFeed();
         }
 
+        function openChallenges() {
+            const gate = document.getElementById('challenges-gate');
+            const forum = document.getElementById('challenges-forum');
+            if (!gate || !forum) return;
+
+            if (!currentUser) {
+                gate.classList.remove('hidden-section');
+                forum.classList.add('hidden-section');
+                gate.innerHTML = `
+                    <p class="text-gray-300 mb-4">Please log in or sign up to access challenge forums.</p>
+                    <button onclick="toggleAuthMode(); switchTab('challenges')" class="btn-primary w-full py-3 rounded-xl">Sign In</button>
+                `;
+                return;
+            }
+
+            gate.classList.add('hidden-section');
+            forum.classList.remove('hidden-section');
+            renderChallengeForum();
+        }
+
+        function renderChallengeForum() {
+            const forum = document.getElementById('challenges-forum');
+            if (!forum || !currentUser) return;
+
+            const challenges = getStashChallenges().sort((a, b) => b.createdAt - a.createdAt);
+            const following = getFollowing();
+            const currentFollows = following[currentUser] || [];
+
+            const challengeComposer = `
+                <div class="glass p-6 rounded-3xl">
+                    <h3 class="text-xl font-semibold mb-2 text-[#2f211d]">Create a Stash Challenge</h3>
+                    <p class="text-sm text-[#6d5142] mb-4">Set a prompt for your followers and invite them to share finished projects.</p>
+                    <input id="challenge-title" type="text" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Challenge title (e.g. Weekend Beanie Sprint)">
+                    <textarea id="challenge-prompt" class="w-full mt-3 min-h-[100px] p-4 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Challenge prompt, rules, and suggested yarn..."></textarea>
+                    <label class="block mt-3 text-xs text-[#6d5142]">Deadline (optional)</label>
+                    <input id="challenge-deadline" type="date" class="w-full mt-1 p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]">
+                    <button onclick="submitStashChallenge()" class="mt-4 btn-primary w-full py-3 rounded-xl">Publish Challenge</button>
+                </div>
+            `;
+
+            const challengeCards = challenges.length === 0 ? `
+                <div class="glass p-6 rounded-3xl text-center text-[#2f211d]">
+                    <p class="mb-2">No active stash challenges yet.</p>
+                </div>
+            ` : challenges.map(challenge => {
+                const participants = challenge.participants || [];
+                const hasJoined = participants.includes(currentUser);
+                const isOwner = challenge.author === currentUser;
+                const canJoin = currentFollows.includes(challenge.author);
+                const deadlineLabel = challenge.deadline ? new Date(challenge.deadline).toLocaleDateString() : 'No deadline';
+                const action = isOwner
+                    ? '<span class="text-xs font-semibold text-[#6d5142]">Your challenge</span>'
+                    : hasJoined
+                        ? '<span class="text-xs font-semibold text-green-700">Joined</span>'
+                        : canJoin
+                            ? `<button onclick="joinStashChallenge('${challenge.id}')" class="btn-primary px-3 py-2 rounded-xl text-sm">Join challenge</button>`
+                            : `<button onclick="toggleFollow('${challenge.author}')" class="px-3 py-2 rounded-xl text-sm border border-[#b68ba6] text-[#5f483c]">Follow ${challenge.author} to join</button>`;
+                return `
+                    <div class="glass p-6 rounded-3xl">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                                <p class="text-sm text-[#6d5142]">By ${challenge.author}</p>
+                                <h4 class="text-lg font-semibold text-[#2f211d]">${challenge.title}</h4>
+                            </div>
+                            ${action}
+                        </div>
+                        <p class="text-sm text-[#2f211d] mb-3">${challenge.prompt}</p>
+                        <div class="flex flex-wrap gap-3 text-xs text-[#6d5142]">
+                            <span>Deadline: ${deadlineLabel}</span>
+                            <span>Participants: ${participants.length}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            forum.innerHTML = challengeComposer + challengeCards;
+        }
+
         function getCommunityPosts() {
             try {
                 return JSON.parse(localStorage.getItem('yarnstash_community_posts')) || [];
@@ -2151,6 +2251,7 @@
             titleInput.value = '';
             promptInput.value = '';
             deadlineInput.value = '';
+            renderChallengeForum();
             renderCommunityFeed();
             showToast('Challenge posted for your followers.');
         }
@@ -2182,6 +2283,7 @@
 
             challenge.participants.push(currentUser);
             saveStashChallenges(challenges);
+            renderChallengeForum();
             renderCommunityFeed();
             showToast('You joined the stash challenge!');
         }
@@ -2223,7 +2325,6 @@
             if (!feed) return;
 
             const posts = getCommunityPosts().sort((a, b) => b.createdAt - a.createdAt);
-            const challenges = getStashChallenges().sort((a, b) => b.createdAt - a.createdAt);
             const following = getFollowing();
             const currentFollows = following[currentUser] || [];
 
@@ -2255,53 +2356,6 @@
                     <button onclick="submitCommunityPost()" class="mt-4 btn-primary w-full py-3 rounded-xl">Post Craft</button>
                 </div>
             `;
-
-            const challengeComposer = `
-                <div class="glass p-6 rounded-3xl">
-                    <h3 class="text-xl font-semibold mb-2 text-[#2f211d]">Create a Stash Challenge</h3>
-                    <p class="text-sm text-[#6d5142] mb-4">Set a prompt for your followers and invite them to share finished projects.</p>
-                    <input id="challenge-title" type="text" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Challenge title (e.g. Weekend Beanie Sprint)">
-                    <textarea id="challenge-prompt" class="w-full mt-3 min-h-[100px] p-4 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Challenge prompt, rules, and suggested yarn..."></textarea>
-                    <label class="block mt-3 text-xs text-[#6d5142]">Deadline (optional)</label>
-                    <input id="challenge-deadline" type="date" class="w-full mt-1 p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]">
-                    <button onclick="submitStashChallenge()" class="mt-4 btn-primary w-full py-3 rounded-xl">Publish Challenge</button>
-                </div>
-            `;
-
-            const challengeCards = challenges.length === 0 ? `
-                <div class="glass p-6 rounded-3xl text-center text-[#2f211d]">
-                    <p class="mb-2">No active stash challenges yet.</p>
-                </div>
-            ` : challenges.map(challenge => {
-                const participants = challenge.participants || [];
-                const hasJoined = participants.includes(currentUser);
-                const isOwner = challenge.author === currentUser;
-                const canJoin = currentFollows.includes(challenge.author);
-                const deadlineLabel = challenge.deadline ? new Date(challenge.deadline).toLocaleDateString() : 'No deadline';
-                const action = isOwner
-                    ? '<span class="text-xs font-semibold text-[#6d5142]">Your challenge</span>'
-                    : hasJoined
-                        ? '<span class="text-xs font-semibold text-green-700">Joined</span>'
-                        : canJoin
-                            ? `<button onclick="joinStashChallenge('${challenge.id}')" class="btn-primary px-3 py-2 rounded-xl text-sm">Join challenge</button>`
-                            : `<button onclick="toggleFollow('${challenge.author}')" class="px-3 py-2 rounded-xl text-sm border border-[#b68ba6] text-[#5f483c]">Follow ${challenge.author} to join</button>`;
-                return `
-                    <div class="glass p-6 rounded-3xl">
-                        <div class="flex items-start justify-between gap-3 mb-3">
-                            <div>
-                                <p class="text-sm text-[#6d5142]">By ${challenge.author}</p>
-                                <h4 class="text-lg font-semibold text-[#2f211d]">${challenge.title}</h4>
-                            </div>
-                            ${action}
-                        </div>
-                        <p class="text-sm text-[#2f211d] mb-3">${challenge.prompt}</p>
-                        <div class="flex flex-wrap gap-3 text-xs text-[#6d5142]">
-                            <span>Deadline: ${deadlineLabel}</span>
-                            <span>Participants: ${participants.length}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
 
             const postCards = posts.length === 0 ? `
                 <div class="glass p-6 rounded-3xl text-center text-[#2f211d]">
@@ -2343,7 +2397,7 @@
                 `;
             }).join('');
 
-            feed.innerHTML = createForm + challengeComposer + challengeCards + postCards;
+            feed.innerHTML = createForm + postCards;
 
             const dropzone = document.getElementById('community-photo-dropzone');
             const fileInput = document.getElementById('community-photo-file-input');
@@ -2458,10 +2512,6 @@
                 const haystack = `${post.author} ${post.content} ${post.craft || ''} ${post.imageUrl || ''} ${post.imageData || ''} ${(post.tags || []).join(' ')}`.toLowerCase();
                 return haystack.includes(query);
             });
-            const challengeMatches = getStashChallenges().filter(challenge => {
-                const haystack = `${challenge.author} ${challenge.title} ${challenge.prompt}`.toLowerCase();
-                return haystack.includes(query);
-            });
             const patternMatches = curatedPatterns.filter(pattern => {
                 const haystack = `${pattern.name} ${pattern.hook} ${pattern.steps.join(' ')} ${pattern.id} ${pattern.craft || 'crochet'} ${getCraftLabel(pattern.craft || 'crochet')}`.toLowerCase();
                 return haystack.includes(query);
@@ -2481,16 +2531,8 @@
                 </div>
             `).join('');
 
-            const challengeMarkup = challengeMatches.slice(0, 3).map(challenge => `
-                <div class="rounded-2xl bg-[#f0f8ff] p-3 text-sm text-[#2f211d]">
-                    <div class="font-semibold">${challenge.title}</div>
-                    <div class="text-xs text-[#6d5142] mt-1">By ${challenge.author}</div>
-                </div>
-            `).join('');
-
             resultsBox.innerHTML = `
                 <div class="space-y-2">
-                    ${challengeMarkup || '<div class="text-sm text-gray-400">No stash challenges matched.</div>'}
                     ${communityMarkup || '<div class="text-sm text-gray-400">No community posts matched.</div>'}
                     ${patternMarkup || '<div class="text-sm text-gray-400">No built-in patterns matched.</div>'}
                 </div>
@@ -2544,6 +2586,9 @@
             if (nav) nav.classList.add('active');
             if (tabId === 'community') {
                 openCommunity();
+            }
+            if (tabId === 'challenges') {
+                openChallenges();
             }
             if (tabId === 'profile') {
                 renderProfileTab();
