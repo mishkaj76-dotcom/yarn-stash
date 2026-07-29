@@ -390,7 +390,7 @@
             'https://api.codetabs.com/v1/proxy?quest=',
             'https://corsproxy.io/?',
         ];
-        const BLOCKED_PATTERN_HOSTS = new Set(['ravelry.com', 'www.ravelry.com']);
+        const BLOCKED_PATTERN_DOMAINS = ['ravelry.com'];
         let currentUser = null;
         let yarnStash = [];
         let selectedProfileUser = null;
@@ -687,6 +687,16 @@
             }
         }
 
+        function isBlockedPatternDomain(urlValue) {
+            try {
+                const parsed = new URL(urlValue, 'https://example.com');
+                const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
+                return BLOCKED_PATTERN_DOMAINS.some(domain => host === domain || host.endsWith(`.${domain}`));
+            } catch {
+                return false;
+            }
+        }
+
         function isSearchLikePatternUrl(urlValue) {
             try {
                 const parsed = new URL(urlValue);
@@ -838,12 +848,7 @@
 
                 combined.forEach(result => {
                     if (!result || !result.url || !result.title) return;
-                    try {
-                        const host = new URL(result.url).hostname.toLowerCase();
-                        if (BLOCKED_PATTERN_HOSTS.has(host)) return;
-                    } catch {
-                        return;
-                    }
+                    if (isBlockedPatternDomain(result.url)) return;
                     const normalized = result.url.toLowerCase();
                     const score = scoreResult(result);
                     const existing = bestByUrl.get(normalized);
@@ -962,6 +967,7 @@
                 const parsed = new URL(trimmed, 'https://www.google.com');
                 if (!['http:', 'https:'].includes(parsed.protocol)) return fallback;
                 if (parsed.hostname === 'localhost' || parsed.hostname === '127.0.0.1') return fallback;
+                if (isBlockedPatternDomain(parsed.toString())) return fallback;
                 return parsed.toString();
             } catch (err) {
                 return fallback;
@@ -1316,7 +1322,7 @@
                 weight: 3,
                 yardage: 120,
                 hook: '4.0mm',
-                url: 'https://www.allfreecrochet.com/tag/Beginner',
+                url: 'https://www.yarnspirations.com/collections/patterns?filter.p.m.global.craft=Crochet&filter.v.price.gte=0&filter.v.price.lte=0',
                 steps: [
                     'Work wrist cuff in back loop only for 12 rows.',
                     'Switch to textured stitch for 16 rows.',
