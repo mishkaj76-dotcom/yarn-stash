@@ -201,12 +201,13 @@
                 </div>
 
                 <div id="saved-product-banner" class="mb-4 hidden-section"></div>
+                <div id="project-board" class="mb-6"></div>
                 <div id="yarn-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
 
                 <div id="empty-state" class="hidden-section text-center py-20 glass rounded-3xl mt-10">
                     <div class="text-6xl mb-4">🧶</div>
-                    <h3 class="text-xl font-medium mb-2">No yarn found</h3>
-                    <p class="text-gray-400">Head to the Log tab to add your first skein!</p>
+                    <h3 class="text-xl font-medium mb-2">No fiber materials found</h3>
+                    <p class="text-gray-400">Head to the Log tab to add your first project material.</p>
                 </div>
             </section>
 
@@ -215,7 +216,17 @@
                     <h2 class="text-2xl font-semibold mb-6">Quick Log</h2>
                     <form id="log-form" class="space-y-6">
                         <div>
-                            <label class="block text-sm font-medium mb-2">Brand / Name <span class="text-xs text-gray-400">(optional)</span></label>
+                            <label class="block text-sm font-medium mb-2">Craft *</label>
+                            <select id="fiber-craft" class="w-full p-3 rounded-xl" required>
+                                <option value="crochet" selected>Crochet</option>
+                                <option value="knitting">Knitting</option>
+                                <option value="spinning">Spinning</option>
+                                <option value="weaving">Weaving</option>
+                                <option value="dyeing">Dyeing</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-2">Brand / Material Name <span class="text-xs text-gray-400">(optional)</span></label>
                             <input type="text" id="yarn-brand" placeholder="e.g. Malabrigo Rios" class="w-full p-3 rounded-xl">
                         </div>
                         <div class="grid grid-cols-2 gap-4">
@@ -236,9 +247,9 @@
                             <input type="range" id="yarn-weight" min="0" max="7" value="4" class="w-full accent-[#FEF9FB]">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-2">Recommended Hook *</label>
+                            <label class="block text-sm font-medium mb-2" id="tool-size-label">Recommended Tool Size *</label>
                             <select id="yarn-hook" class="w-full p-3 rounded-xl" required>
-                                <option value="" selected disabled>Select a hook size</option>
+                                <option value="" selected disabled>Select a tool size</option>
                                 <option value="2.25mm">2.25mm (B-1)</option>
                                 <option value="3.25mm">3.25mm (D-3)</option>
                                 <option value="3.5mm">3.5mm (E-4)</option>
@@ -257,7 +268,7 @@
             <section id="tab-match" class="tab-content hidden-section animate-fade">
                 <div class="mb-8">
                     <h2 class="text-2xl font-semibold mb-2">Matchmaker</h2>
-                    <p class="text-gray-400">Find the perfect project for your yarn.</p>
+                    <p class="text-gray-400">Find the perfect project for your craft materials.</p>
                 </div>
 
                 <div id="match-selector" class="glass p-6 rounded-3xl mb-8">
@@ -280,16 +291,16 @@
             <section id="tab-community" class="tab-content hidden-section animate-fade">
                 <div class="mb-8">
                     <h2 class="text-2xl font-semibold mb-2 text-[#2f211d]">Community</h2>
-                    <p class="text-[#5f483c]">Share your newest makes, discover inspiration, and search for patterns together.</p>
+                    <p class="text-[#5f483c]">A fiber hub for knitters, crocheters, spinners, weavers, and dyers to share projects and patterns.</p>
                 </div>
                 <div id="community-gate" class="glass p-6 rounded-3xl mb-6">
-                    <p class="text-[#2f211d] mb-4">This space is for all YarnStash makers. Post your crafts, follow other makers, create stash challenges, and leave comments.</p>
+                    <p class="text-[#2f211d] mb-4">This space is for all fiber artists. Post your work, follow other makers, create stash challenges, and leave comments.</p>
                     <button onclick="switchTab('community')" class="btn-primary w-full py-3 rounded-xl">Open Community</button>
                 </div>
                 <div class="glass p-6 rounded-3xl mb-6">
                     <label class="block text-sm font-medium mb-3 text-[#2f211d]">Search community posts and patterns</label>
                     <div class="flex gap-2">
-                        <input id="community-search-input" type="text" placeholder="Try: shawl, blanket, amigurumi..." class="w-full p-3 rounded-xl text-[#2f211d]">
+                        <input id="community-search-input" type="text" placeholder="Try: woven scarf, hand-dyed, drop spindle, shawl..." class="w-full p-3 rounded-xl text-[#2f211d]">
                         <button onclick="searchCommunityPatterns()" class="btn-primary px-4 py-3 rounded-xl">Search</button>
                     </div>
                     <div id="community-search-results" class="mt-4 space-y-3"></div>
@@ -340,7 +351,7 @@
         </div>
 
         <div id="success-toast" style="display: none; position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #fff1f2; padding: 15px 30px; border-radius: 50px; color: #ff8fb1; text-align: center; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 1px solid #ff8fb1;">
-            ✨ Yarn successfully logged!
+            ✨ Material successfully logged!
         </div>
 
         <nav class="fixed bottom-0 left-0 right-0 glass m-4 mb-6 rounded-3xl flex justify-around items-center h-20 z-50">
@@ -391,9 +402,53 @@
             'https://corsproxy.io/?',
         ];
         const BLOCKED_PATTERN_DOMAINS = ['ravelry.com'];
+        const CRAFT_OPTIONS = ['crochet', 'knitting', 'spinning', 'weaving', 'dyeing'];
+        const CRAFT_LABELS = {
+            crochet: 'Crochet',
+            knitting: 'Knitting',
+            spinning: 'Spinning',
+            weaving: 'Weaving',
+            dyeing: 'Dyeing'
+        };
+        const CRAFT_TOOL_LABELS = {
+            crochet: 'Hook',
+            knitting: 'Needle',
+            spinning: 'Spindle',
+            weaving: 'Reed',
+            dyeing: 'Batch'
+        };
         let currentUser = null;
         let yarnStash = [];
         let selectedProfileUser = null;
+
+        function normalizeCraft(craftValue) {
+            const normalized = String(craftValue || '').trim().toLowerCase();
+            return CRAFT_OPTIONS.includes(normalized) ? normalized : 'crochet';
+        }
+
+        function getCraftLabel(craftValue) {
+            const craft = normalizeCraft(craftValue);
+            return CRAFT_LABELS[craft] || 'Crochet';
+        }
+
+        function getToolLabel(craftValue) {
+            const craft = normalizeCraft(craftValue);
+            return CRAFT_TOOL_LABELS[craft] || 'Hook';
+        }
+
+        function getUserProjects() {
+            if (!currentUser) return [];
+            try {
+                return JSON.parse(localStorage.getItem(`yarnProjects_${currentUser}`)) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        function saveUserProjects(projects) {
+            if (!currentUser) return;
+            localStorage.setItem(`yarnProjects_${currentUser}`, JSON.stringify(projects || []));
+        }
 
         function readConsentChoice() {
             try {
@@ -932,13 +987,17 @@
         }
 
         function buildYarnQuery(yarn) {
+            const craft = normalizeCraft(yarn.craft);
+            const craftLabel = getCraftLabel(craft).toLowerCase();
+            const toolLabel = getToolLabel(craft).toLowerCase();
             const baseQuery = [
                 yarn.brand,
                 yarn.color,
+                craftLabel,
                 yarn.weight !== null && yarn.weight !== undefined ? `${weightLabels[yarn.weight]}` : '',
-                normalizeHookSize(yarn.hook),
+                yarn.hook ? `${normalizeHookSize(yarn.hook)} ${toolLabel}` : '',
                 yarn.yardage ? `${yarn.yardage} yards` : '',
-                'crochet pattern'
+                `${craftLabel} pattern`
             ].filter(Boolean).join(' ');
 
             return buildPatternSearchQuery(baseQuery);
@@ -1395,6 +1454,66 @@
                     'Build up side walls with DC rounds.',
                     'Stuff firmly and close top.'
                 ]
+            },
+            {
+                id: 'knit-ribbed-hat',
+                name: 'Classic Ribbed Knit Hat',
+                craft: 'knitting',
+                weight: 4,
+                yardage: 220,
+                hook: '4.5mm',
+                url: 'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns',
+                steps: [
+                    'Cast on 88 stitches with 4.5mm circular needles.',
+                    'Work 2x2 rib for 7 inches.',
+                    'Begin crown decreases every other round until 8 stitches remain.',
+                    'Thread tail through live stitches and secure.'
+                ]
+            },
+            {
+                id: 'drop-spindle-sample',
+                name: 'Drop Spindle Practice Singles',
+                craft: 'spinning',
+                weight: 2,
+                yardage: 120,
+                hook: 'Top-whorl spindle',
+                url: 'https://www.yarnspirations.com/collections/patterns?filter.p.m.global.craft=Crochet&filter.v.price.gte=0&filter.v.price.lte=0',
+                steps: [
+                    'Draft fiber into a smooth pencil roving.',
+                    'Spin clockwise while drafting slowly for even singles.',
+                    'Wind on and repeat for two matching bobbins.',
+                    'Ply counterclockwise and skein for finishing.'
+                ]
+            },
+            {
+                id: 'table-runner-weave',
+                name: 'Plain Weave Table Runner',
+                craft: 'weaving',
+                weight: 3,
+                yardage: 500,
+                hook: '10-dent reed',
+                url: 'https://www.garnstudio.com/search.php?c=crochet&lang=en',
+                steps: [
+                    'Warp the loom to 14 inches wide using cotton yarn.',
+                    'Weave plain weave for 60 inches with even beat.',
+                    'Hemstitch both ends before removing from loom.',
+                    'Wet finish and press flat.'
+                ]
+            },
+            {
+                id: 'hand-dyed-mini-skein',
+                name: 'Hand-Dyed Mini Skein Batch',
+                craft: 'dyeing',
+                weight: 4,
+                yardage: 160,
+                hook: '20g mini skeins',
+                url: 'https://hobbii.com/product-patterns/free-patterns',
+                steps: [
+                    'Soak mini skeins in warm water with citric acid.',
+                    'Apply dye in sections and gently work color through fiber.',
+                    'Steam set for 30 minutes and let cool fully.',
+                    'Rinse until clear and hang to dry.'
+                ]
             }
         ];
 
@@ -1510,9 +1629,9 @@
             if (!modal || !title || !body || !counter || !nextBtn || !backBtn || !closeBtn) return;
 
             const steps = [
-                { title: 'Welcome to your yarn studio', body: 'Use YarnStash to track every skein you own, note the weight, yardage, and color, and keep your collection tidy.' },
-                { title: 'Find project matches', body: 'Open a yarn card and use the pattern and match tools to discover new projects that fit your stash.' },
-                { title: 'Keep building your collection', body: 'Add more favorites over time and revisit the stash anytime to plan your next crochet or knitting project.' }
+                { title: 'Welcome to your fiber studio', body: 'Use YarnStash to track fiber materials for knitting, crochet, spinning, weaving, and dyeing.' },
+                { title: 'Find project matches', body: 'Open a material card and use the pattern tools to discover projects that fit your craft and stash.' },
+                { title: 'Grow your maker network', body: 'Share progress with other fiber artists, join challenges, and plan your next project together.' }
             ];
             let stepIndex = 0;
 
@@ -1581,7 +1700,14 @@
 
         function loadData() {
             const stored = localStorage.getItem(`yarnStash_${currentUser}`);
-            yarnStash = stored ? JSON.parse(stored) : [];
+            const parsed = stored ? JSON.parse(stored) : [];
+            yarnStash = Array.isArray(parsed)
+                ? parsed.map(item => ({
+                    ...item,
+                    id: item.id || `fiber-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                    craft: normalizeCraft(item.craft)
+                }))
+                : [];
         }
 
         function getUserRegistry() {
@@ -1689,7 +1815,7 @@
                             <div>
                                 <h3 class="text-xl font-semibold text-[#2f211d]">${profile.displayName || targetUser}</h3>
                                 <p class="text-sm text-[#6d5142]">@${targetUser}</p>
-                                <p class="text-xs text-[#7a4c54] font-semibold">YarnStash Creator</p>
+                                <p class="text-xs text-[#7a4c54] font-semibold">Fiber Artist</p>
                                 <p class="text-sm text-[#6d5142]">${profile.location || 'Location not shared yet'}</p>
                             </div>
                         </div>
@@ -1790,6 +1916,71 @@
             }
         }
 
+        function markProjectComplete(projectId) {
+            const projects = getUserProjects();
+            const project = projects.find(item => item.id === projectId);
+            if (!project) return;
+            project.status = 'Completed';
+            project.completedAt = Date.now();
+            saveUserProjects(projects);
+            renderStash();
+        }
+
+        function removeProject(projectId) {
+            const projects = getUserProjects().filter(item => item.id !== projectId);
+            saveUserProjects(projects);
+            renderStash();
+        }
+
+        function renderProjectBoard() {
+            const board = document.getElementById('project-board');
+            if (!board) return;
+
+            const projects = getUserProjects();
+            const active = projects.filter(item => item.status !== 'Completed');
+            const complete = projects.filter(item => item.status === 'Completed');
+
+            if (!projects.length) {
+                board.innerHTML = `
+                    <div class="glass p-4 rounded-2xl text-sm text-[#5f483c]">
+                        Project Tracker is empty. Start a project from Matchmaker to track progress.
+                    </div>
+                `;
+                return;
+            }
+
+            board.innerHTML = `
+                <div class="glass p-5 rounded-3xl">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-[#2f211d]">Project Tracker</h3>
+                        <p class="text-xs text-[#6d5142]">${active.length} active • ${complete.length} completed</p>
+                    </div>
+                    <div class="space-y-3">
+                        ${projects.slice(0, 6).map(project => {
+                            const statusClass = project.status === 'Completed'
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : 'bg-amber-100 text-amber-700';
+                            const action = project.status === 'Completed'
+                                ? `<button onclick="removeProject('${project.id}')" class="text-xs text-[#5f483c] underline">Remove</button>`
+                                : `<button onclick="markProjectComplete('${project.id}')" class="text-xs text-[#2f7b45] underline">Mark complete</button>`;
+                            return `
+                                <div class="rounded-2xl bg-[#fcf8fb] p-3 flex items-start justify-between gap-3">
+                                    <div>
+                                        <p class="text-sm font-semibold text-[#2f211d]">${escapeHtml(project.patternName || 'Untitled project')}</p>
+                                        <p class="text-xs text-[#6d5142]">${escapeHtml(getCraftLabel(project.craft))} • ${escapeHtml(project.materialName || 'Material not named')}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <span class="inline-block px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">${escapeHtml(project.status || 'Active')}</span>
+                                        <div class="mt-2">${action}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
         function renderStash() {
             const grid = document.getElementById('yarn-grid');
             const empty = document.getElementById('empty-state');
@@ -1819,12 +2010,15 @@
 
             if (yarnStash.length === 0) {
                 empty.classList.remove('hidden-section');
+                renderProjectBoard();
                 updateMatchDropdown();
                 return;
             }
 
             empty.classList.add('hidden-section');
             yarnStash.forEach((yarn, index) => {
+                const craft = normalizeCraft(yarn.craft);
+                const toolLabel = getToolLabel(craft);
                 const card = document.createElement('div');
                 card.className = 'glass p-6 yarn-card relative overflow-hidden animate-fade';
                 card.innerHTML = `
@@ -1838,20 +2032,25 @@
                             </svg>
                         </button>
                     </div>
-                    <h3 class="text-xl font-bold mb-1">${yarn.brand || 'Untitled yarn'}</h3>
+                    <h3 class="text-xl font-bold mb-1">${yarn.brand || 'Untitled material'}</h3>
                     <p class="text-sm text-gray-400 mb-4">${yarn.color}${yarn.yardage ? ` • ${yarn.yardage} yds` : ''}</p>
+                    <div class="text-xs text-[#6d5142] space-y-1">
+                        <p>Craft: <span class="font-semibold">${getCraftLabel(craft)}</span></p>
+                        <p>${toolLabel}: <span class="font-semibold">${escapeHtml(yarn.hook || 'Not set')}</span></p>
+                    </div>
                     <div class="flex justify-between items-center mt-6">
                         <button onclick="toggleStatus(${index})" class="text-xs font-semibold px-3 py-1 rounded-full border ${yarn.status === 'Available' ? 'border-green-400 text-green-400' : 'border-yellow-400 text-yellow-400'}">
                             ${yarn.status}
                         </button>
                         <div class="flex gap-2">
-                            <button onclick="findPatternsForYarn(${index})" class="text-xs text-blue-400 underline decoration-blue-400/30 underline-offset-4" title="Find crochet patterns">Find Patterns</button>
+                            <button onclick="findPatternsForYarn(${index})" class="text-xs text-blue-400 underline decoration-blue-400/30 underline-offset-4" title="Find craft patterns">Find Patterns</button>
                             <button onclick="findMatchForYarn(${index})" class="text-xs text-[#EA85C7] underline decoration-[#EA85C7]/30 underline-offset-4">Find Match</button>
                         </div>
                     </div>
                 `;
                 grid.appendChild(card);
             });
+            renderProjectBoard();
             updateMatchDropdown();
         }
 
@@ -2032,6 +2231,13 @@
                 <div class="glass p-6 rounded-3xl">
                     <h3 class="text-xl font-semibold mb-2 text-[#2f211d]">Share your latest craft</h3>
                     <p class="text-sm text-[#6d5142] mb-4">Add a photo, paste one from your clipboard, or drop one into the box below.</p>
+                    <select id="community-post-craft" class="w-full mb-3 p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]">
+                        <option value="crochet">Crochet</option>
+                        <option value="knitting">Knitting</option>
+                        <option value="spinning">Spinning</option>
+                        <option value="weaving">Weaving</option>
+                        <option value="dyeing">Dyeing</option>
+                    </select>
                     <textarea id="community-post-text" class="w-full min-h-[120px] p-4 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Describe your project, materials, or inspiration..."></textarea>
                     <input id="community-post-tags" type="text" class="w-full mt-3 p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Tags: shawl, blanket, crochet (optional)">
                     <div id="community-photo-dropzone" class="mt-3 rounded-2xl border border-dashed border-[#b68ba6] bg-[#fcf7fb] p-3 text-sm text-[#5e4338]">
@@ -2111,7 +2317,7 @@
                             <div>
                                 <p class="text-sm text-[#6d5142]">${new Date(post.createdAt).toLocaleString()}</p>
                                 <h4 class="text-lg font-semibold text-[#2f211d]">${post.author}</h4>
-                                <span class="inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-semibold bg-[#f5eef7] text-[#7a4c54]">Creator</span>
+                                <span class="inline-block mt-1 rounded-full px-2 py-0.5 text-xs font-semibold bg-[#f5eef7] text-[#7a4c54]">${getCraftLabel(post.craft)}</span>
                             </div>
                             <button onclick="toggleFollow('${post.author}')" class="text-sm font-semibold ${currentFollows.includes(post.author) ? 'text-green-600' : 'text-[#5f483c]'}">${post.author === currentUser ? 'You' : currentFollows.includes(post.author) ? 'Following' : 'Follow'}</button>
                         </div>
@@ -2178,6 +2384,7 @@
             const textarea = document.getElementById('community-post-text');
             const imageInput = document.getElementById('community-post-image');
             const tagsInput = document.getElementById('community-post-tags');
+            const craftInput = document.getElementById('community-post-craft');
             if (!textarea) return;
             const content = textarea.value.trim();
             if (!content) {
@@ -2186,10 +2393,12 @@
             }
             const imageUrl = imageInput ? imageInput.value.trim() : '';
             const tags = tagsInput ? tagsInput.value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) : [];
+            const craft = normalizeCraft(craftInput ? craftInput.value : 'crochet');
             const posts = getCommunityPosts();
             posts.unshift({
                 id: `post-${Date.now()}`,
                 author: currentUser,
+                craft,
                 content,
                 imageUrl,
                 imageData: pendingCommunityImage || '',
@@ -2246,7 +2455,7 @@
             }
 
             const communityMatches = getCommunityPosts().filter(post => {
-                const haystack = `${post.author} ${post.content} ${post.imageUrl || ''} ${post.imageData || ''} ${(post.tags || []).join(' ')}`.toLowerCase();
+                const haystack = `${post.author} ${post.content} ${post.craft || ''} ${post.imageUrl || ''} ${post.imageData || ''} ${(post.tags || []).join(' ')}`.toLowerCase();
                 return haystack.includes(query);
             });
             const challengeMatches = getStashChallenges().filter(challenge => {
@@ -2254,7 +2463,7 @@
                 return haystack.includes(query);
             });
             const patternMatches = curatedPatterns.filter(pattern => {
-                const haystack = `${pattern.name} ${pattern.hook} ${pattern.steps.join(' ')} ${pattern.id}`.toLowerCase();
+                const haystack = `${pattern.name} ${pattern.hook} ${pattern.steps.join(' ')} ${pattern.id} ${pattern.craft || 'crochet'} ${getCraftLabel(pattern.craft || 'crochet')}`.toLowerCase();
                 return haystack.includes(query);
             });
 
@@ -2345,21 +2554,33 @@
             document.getElementById('weight-val').innerText = weightLabels[e.target.value];
         });
 
+        document.getElementById('fiber-craft').addEventListener('change', (e) => {
+            const craft = normalizeCraft(e.target.value);
+            const toolLabel = getToolLabel(craft);
+            const toolLabelEl = document.getElementById('tool-size-label');
+            if (toolLabelEl) {
+                toolLabelEl.innerText = `Recommended ${toolLabel} Size *`;
+            }
+        });
+
         document.getElementById('log-form').addEventListener('submit', (e) => {
             e.preventDefault();
+            const craft = normalizeCraft(document.getElementById('fiber-craft').value);
             const color = document.getElementById('yarn-color').value.trim();
             const hook = document.getElementById('yarn-hook').value;
 
             if (!color || !hook) {
-                showToast('Please add a color and hook size.');
+                showToast(`Please add a color and ${getToolLabel(craft).toLowerCase()} size.`);
                 return;
             }
 
             const yardageValue = document.getElementById('yarn-yardage').value;
             const weightValue = document.getElementById('yarn-weight').value;
             const newYarn = {
+                id: `fiber-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
                 brand: document.getElementById('yarn-brand').value.trim(),
                 color,
+                craft,
                 yardage: yardageValue ? parseInt(yardageValue, 10) : null,
                 weight: weightValue ? parseInt(weightValue, 10) : null,
                 hook,
@@ -2392,7 +2613,7 @@
                 if (yarn.status === 'Available') {
                     const opt = document.createElement('option');
                     opt.value = idx;
-                    opt.innerText = `${yarn.brand || 'Untitled yarn'} (${yarn.color})${yarn.yardage ? ` - ${yarn.yardage}yds` : ''}`;
+                    opt.innerText = `${yarn.brand || 'Untitled material'} (${getCraftLabel(yarn.craft)} • ${yarn.color})${yarn.yardage ? ` - ${yarn.yardage}yds` : ''}`;
                     dropdown.appendChild(opt);
                 }
             });
@@ -2449,7 +2670,9 @@
             }
 
             const yarn = yarnStash[idx];
+            const yarnCraft = normalizeCraft(yarn.craft);
             const compatible = curatedPatterns.filter(r => (
+                normalizeCraft(r.craft) === yarnCraft &&
                 (yarn.weight === null || yarn.weight === undefined || r.weight === yarn.weight) &&
                 (yarn.yardage === null || yarn.yardage === undefined || r.yardage <= yarn.yardage)
             ));
@@ -2466,9 +2689,9 @@
                         <div class="flex justify-between items-center mb-4">
                             <div>
                                 <h3 class="font-bold text-lg">${proj.name}</h3>
-                                <p class="text-xs text-gray-400">Built-in Recipe</p>
+                                <p class="text-xs text-gray-400">Built-in ${getCraftLabel(proj.craft || 'crochet')} Recipe</p>
                             </div>
-                            <span class="text-xs bg-white/10 px-2 py-1 rounded">${proj.hook} Hook</span>
+                            <span class="text-xs bg-white/10 px-2 py-1 rounded">${proj.hook} ${getToolLabel(proj.craft || 'crochet')}</span>
                         </div>
                         <div class="text-sm text-gray-400 mb-6 space-y-1">
                             <p>Requires: ${proj.yardage} yds</p>
@@ -2489,10 +2712,10 @@
                 <div class="flex items-start justify-between mb-4">
                     <div>
                         <h3 class="font-bold text-lg">✨ Yarniverse Search</h3>
-                        <p class="text-xs text-gray-400">Unified pattern results from across the yarn universe</p>
+                        <p class="text-xs text-gray-400">Unified ${getCraftLabel(yarnCraft).toLowerCase()} pattern results from across the fiber universe</p>
                     </div>
                 </div>
-                <p class="text-sm text-gray-300 mb-4">Searching the Yarniverse for patterns matching <span class="font-semibold">${yarn.brand || 'your yarn'}</span> in <span class="font-semibold">${yarn.color}</span>${yarn.weight !== null && yarn.weight !== undefined ? ` (Weight ${yarn.weight})` : ''}</p>
+                <p class="text-sm text-gray-300 mb-4">Searching for ${getCraftLabel(yarnCraft).toLowerCase()} patterns matching <span class="font-semibold">${yarn.brand || 'your material'}</span> in <span class="font-semibold">${yarn.color}</span>${yarn.weight !== null && yarn.weight !== undefined ? ` (Weight ${yarn.weight})` : ''}</p>
                 <p class="text-xs text-gray-400 mt-3">Query: ${yarnQuery}</p>
                 <div id="yarniverse-results-${idx}" class="mt-4 space-y-3">Loading pattern results...</div>
             `;
@@ -2508,10 +2731,10 @@
             const proj = curatedPatterns.find(r => r.id === projId);
             currentProjectYarnIdx = yarnIdx;
             document.getElementById('modal-title').innerText = proj.name;
-            document.getElementById('modal-stats').innerText = `Weight ${proj.weight} • ${proj.yardage} yds required • ${proj.hook} hook`;
+            document.getElementById('modal-stats').innerText = `${getCraftLabel(proj.craft || 'crochet')} • Weight ${proj.weight} • ${proj.yardage} yds required • ${proj.hook} ${getToolLabel(proj.craft || 'crochet').toLowerCase()}`;
             const content = document.getElementById('modal-content');
             content.innerHTML = `<ol class="list-decimal pl-5 space-y-3">${proj.steps.map(s => `<li>${s}</li>`).join('')}</ol>`;
-            const safePatternUrl = buildWorkingPatternLink(proj.url, `${proj.name} crochet pattern`);
+            const safePatternUrl = buildWorkingPatternLink(proj.url, `${proj.name} ${normalizeCraft(proj.craft)} pattern`);
             if (safePatternUrl) {
                 content.innerHTML += `<div class="mt-6"><a href="${safePatternUrl}" onclick="return forceNavigate(event)" class="inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg text-sm font-semibold">View full pattern online</a></div>`;
             }
@@ -2541,6 +2764,22 @@
             confirmBtn.onclick = () => {
                 yarnStash[currentProjectYarnIdx].status = 'In Use';
                 saveData();
+                const yarn = yarnStash[currentProjectYarnIdx];
+                const projects = getUserProjects();
+                const existing = projects.find(item => item.yarnId === yarn.id && item.patternId === proj.id && item.status !== 'Completed');
+                if (!existing) {
+                    projects.unshift({
+                        id: `project-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+                        yarnId: yarn.id,
+                        patternId: proj.id,
+                        patternName: proj.name,
+                        materialName: yarn.brand || yarn.color || 'Material',
+                        craft: normalizeCraft(proj.craft || yarn.craft),
+                        status: 'Active',
+                        startedAt: Date.now()
+                    });
+                    saveUserProjects(projects);
+                }
                 closeModal();
                 renderStash();
                 switchTab('stash');
@@ -2563,7 +2802,7 @@
 
         async function findPatternsForYarn(index) {
             const yarn = yarnStash[index];
-            const searchDesc = `Searching the Yarniverse for: <strong>${yarn.brand}</strong> — ${yarn.color} (Weight ${yarn.weight})`;
+            const searchDesc = `Searching for ${getCraftLabel(yarn.craft).toLowerCase()} patterns for: <strong>${yarn.brand || 'material'}</strong> — ${yarn.color} (Weight ${yarn.weight ?? 'n/a'})`;
             document.getElementById('pattern-search-desc').innerHTML = searchDesc;
 
             const patternLinks = document.getElementById('pattern-links');
