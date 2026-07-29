@@ -686,6 +686,29 @@
             }
         }
 
+        function isSearchLikePatternUrl(urlValue) {
+            try {
+                const parsed = new URL(urlValue);
+                const path = parsed.pathname.toLowerCase();
+                const query = parsed.search.toLowerCase();
+                const hash = parsed.hash.toLowerCase();
+                const combined = `${path} ${query} ${hash}`;
+
+                return [
+                    '/search',
+                    '?q=',
+                    'query=',
+                    'search_term=',
+                    'filter',
+                    'availability=',
+                    'tag/',
+                    '/collections/'
+                ].some(marker => combined.includes(marker));
+            } catch {
+                return false;
+            }
+        }
+
         function getCuratedPatternFallback(query) {
             const tokens = buildSearchTokens(query);
             const keywordRegex = /(pattern|crochet|amigurumi|blanket|beanie|shawl|scarf|sweater|knit|hat|cardigan|granny)/i;
@@ -699,9 +722,12 @@
                 .sort((a, b) => b.score - a.score)
                 .slice(0, 8)
                 .map(item => ({
-                    title: item.pattern.name,
+                    title: isSearchLikePatternUrl(item.pattern.url)
+                        ? `Search ${getDomainLabel(item.pattern.url)} for ${item.pattern.name}`
+                        : item.pattern.name,
                     url: item.pattern.url,
-                    site: 'Yarniverse Library'
+                    site: isSearchLikePatternUrl(item.pattern.url) ? 'Yarniverse Search' : 'Yarniverse Library',
+                    isExactPattern: !isSearchLikePatternUrl(item.pattern.url)
                 }));
 
             return matches;
@@ -1142,6 +1168,8 @@
                 finalResults.slice(0, 12).forEach(item => {
                     const safeUrl = buildWorkingPatternLink(item.url, query);
                     if (!safeUrl) return;
+                    const opensSearch = isSearchLikePatternUrl(safeUrl);
+                    const actionLabel = opensSearch || item.isExactPattern === false ? 'Search' : 'Open';
 
                     const card = document.createElement('div');
                     card.className = 'glass p-4 rounded-lg flex items-start justify-between gap-4';
@@ -1150,7 +1178,7 @@
                             <p class="font-semibold text-base text-white truncate">${escapeHtml(item.title || 'Pattern link')}</p>
                             <p class="text-xs text-gray-400">${escapeHtml(item.site || 'Yarniverse')} • ${escapeHtml(getDomainLabel(safeUrl))}</p>
                         </div>
-                        <a href="${safeUrl}" onclick="return forceNavigate(event)" class="shrink-0 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">Open</a>
+                        <a href="${safeUrl}" onclick="return forceNavigate(event)" class="shrink-0 inline-block bg-blue-500 hover:bg-blue-600 text-white py-2 px-3 rounded-lg text-xs font-semibold">${actionLabel}</a>
                     `;
                     resultsRoot.appendChild(card);
                 });
