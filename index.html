@@ -390,6 +390,7 @@
             'https://api.codetabs.com/v1/proxy?quest=',
             'https://corsproxy.io/?',
         ];
+        const BLOCKED_PATTERN_HOSTS = new Set(['ravelry.com', 'www.ravelry.com']);
         let currentUser = null;
         let yarnStash = [];
         let selectedProfileUser = null;
@@ -837,6 +838,12 @@
 
                 combined.forEach(result => {
                     if (!result || !result.url || !result.title) return;
+                    try {
+                        const host = new URL(result.url).hostname.toLowerCase();
+                        if (BLOCKED_PATTERN_HOSTS.has(host)) return;
+                    } catch {
+                        return;
+                    }
                     const normalized = result.url.toLowerCase();
                     const score = scoreResult(result);
                     const existing = bestByUrl.get(normalized);
@@ -968,7 +975,6 @@
         }
 
         const yarniverseTrustedSourceUrls = [
-            'https://www.ravelry.com/',
             'https://www.allfreecrochet.com/',
             'https://www.yarnspirations.com/',
             'https://www.lionbrand.com/',
@@ -1040,7 +1046,6 @@
             'https://www.crochetbecreative.com/',
             'https://www.lillabjorncrochet.com/',
             'https://www.hookedbyrobin.com/',
-            'https://www.ravelry.com/patterns/search#craft=crochet&availability=free',
             'https://www.yarnspirations.com/collections/patterns?filter.p.m.global.craft=Crochet&filter.v.price.gte=0&filter.v.price.lte=0',
             'https://www.lionbrand.com/collections/crochet-patterns?filter.v.price.gte=0&filter.v.price.lte=0',
             'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns',
@@ -1082,9 +1087,6 @@
                 .trim() || 'crochet pattern';
             const encodedQuery = encodeURIComponent(searchQuery);
 
-            if (host === 'ravelry.com') {
-                return `https://www.ravelry.com/patterns/search#craft=crochet&query=${encodeURIComponent(searchQuery)}`;
-            }
             if (host === 'allfreecrochet.com') {
                 return `https://www.allfreecrochet.com/search?search_term=${encodedQuery}`;
             }
@@ -1219,7 +1221,7 @@
                 weight: 4,
                 yardage: 150,
                 hook: '3.5mm',
-                url: 'https://www.ravelry.com/patterns/search#craft=crochet&availability=free',
+                url: 'https://www.allfreecrochet.com/Crochet-Amigurumi-Patterns/Nogard-The-No-sew-Dragon-194849',
                 steps: [
                     'Head: Round 1-6: Standard SC increases to 36 sts.',
                     'Rounds 7-12: SC around.',
@@ -1301,7 +1303,7 @@
                 weight: 1,
                 yardage: 900,
                 hook: '3.0mm',
-                url: 'https://www.ravelry.com/patterns/search#craft=crochet&availability=free',
+                url: 'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns',
                 steps: [
                     'Chain 180, then work alternating shell and chain rows.',
                     'Repeat mesh shells for 20 rows.',
@@ -1314,7 +1316,7 @@
                 weight: 3,
                 yardage: 120,
                 hook: '4.0mm',
-                url: 'https://www.ravelry.com/patterns/search#craft=crochet&availability=free',
+                url: 'https://www.allfreecrochet.com/tag/Beginner',
                 steps: [
                     'Work wrist cuff in back loop only for 12 rows.',
                     'Switch to textured stitch for 16 rows.',
@@ -1381,7 +1383,7 @@
                 weight: 7,
                 yardage: 1000,
                 hook: '12.0mm',
-                url: 'https://www.ravelry.com/patterns/search#craft=crochet&availability=free',
+                url: 'https://hobbii.com/product-patterns/free-patterns',
                 steps: [
                     'Crochet a large circle base.',
                     'Build up side walls with DC rounds.',
