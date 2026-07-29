@@ -553,6 +553,79 @@
                 .filter(t => t && t.length > 1 && !['and', 'the', 'for', 'with', 'from', 'your', 'this'].includes(t));
         }
 
+        function extractPatternKeywords(rawInput) {
+            const source = String(rawInput || '').toLowerCase().replace(/\s+/g, ' ').trim();
+            if (!source) {
+                return { hooks: [], colors: [], weights: [], extras: [] };
+            }
+
+            const hooks = Array.from(new Set(
+                [...source.matchAll(/(\d+(?:\.\d+)?)\s*mm\b/g)].map(match => `${match[1]}mm`)
+            ));
+
+            const colorTerms = [
+                'orange', 'red', 'blue', 'green', 'yellow', 'purple', 'pink', 'teal', 'turquoise',
+                'brown', 'black', 'white', 'gray', 'grey', 'cream', 'beige', 'navy', 'gold', 'silver'
+            ];
+            const colors = colorTerms.filter(color => new RegExp(`\\b${color}\\b`, 'i').test(source));
+
+            const weightTerms = [];
+            const weightNames = ['lace', 'super fine', 'fine', 'light', 'medium', 'bulky', 'super bulky', 'jumbo'];
+            weightNames.forEach(name => {
+                if (new RegExp(`\\b${name}\\b`, 'i').test(source)) weightTerms.push(name);
+            });
+            const weightNumbers = Array.from(new Set(
+                [...source.matchAll(/(?:weight\s*)?\b([0-7])\b/g)].map(match => match[1])
+            ));
+            weightNumbers.forEach(num => {
+                if (!weightTerms.includes(`weight ${num}`)) {
+                    weightTerms.push(`weight ${num}`);
+                }
+            });
+
+            const stopwords = new Set([
+                'crochet', 'pattern', 'patterns', 'color', 'hook', 'hooks', 'yarn', 'using', 'with',
+                'and', 'the', 'for', 'from', 'your', 'this', 'that', 'look', 'find', 'search', 'mm'
+            ]);
+            const extras = Array.from(new Set(
+                source
+                    .replace(/[^a-z0-9.\s-]+/g, ' ')
+                    .split(/\s+/)
+                    .filter(token => token && token.length > 2 && !stopwords.has(token) && !/^\d+$/.test(token))
+            ));
+
+            return {
+                hooks,
+                colors,
+                weights: Array.from(new Set(weightTerms)),
+                extras
+            };
+        }
+
+        function buildSearchKeywordVariants(rawQuery) {
+            const source = String(rawQuery || '').replace(/\s+/g, ' ').trim();
+            const { hooks, colors, weights, extras } = extractPatternKeywords(source);
+            const variants = [];
+
+            hooks.forEach(hook => variants.push(`${hook} hook crochet pattern`));
+            colors.forEach(color => variants.push(`${color} crochet pattern`));
+            weights.forEach(weight => variants.push(`${weight} yarn crochet pattern`));
+
+            if (extras.length) {
+                variants.push(`${extras.slice(0, 3).join(' ')} crochet pattern`);
+            }
+
+            if (source) {
+                variants.push(source);
+            }
+
+            if (!variants.length) {
+                variants.push('crochet pattern');
+            }
+
+            return Array.from(new Set(variants.map(item => item.trim()).filter(Boolean))).slice(0, 5);
+        }
+
         async function fetchThroughCorsProxy(url) {
             let lastError = null;
             for (const proxy of CORS_PROXY_SERVICES) {
@@ -701,27 +774,60 @@
         async function searchMultipleSources(query) {
             console.log('Searching multiple sources for:', query);
             try {
-                const [localResults, ddgResults, bingResults] = await Promise.all([
-                    searchViaLocalScraper(query),
-                    browserDuckDuckGoSearch(query),
-                    searchBingResults(query)
-                ]);
-                
-                const combined = [...localResults, ...ddgResults, ...bingResults];
-                const seen = new Set();
-                const unique = combined.filter(result => {
-                    if (!result || !result.url || !result.title) return false;
+                const queryVariants = buildSearchKeywordVariants(query);
+                const allRuns = await Promise.all(
+                    queryVariants.map(async variant => {
+                        const [localResults, ddgResults, bingResults] = await Promise.all([
+                            searchViaLocalScraper(variant),
+                            browserDuckDuckGoSearch(variant),
+                            searchBingResults(variant)
+                        ]);
+                        return [...localResults, ...ddgResults, ...bingResults].map(item => ({
+                            ...item,
+                            matchedQuery: variant
+                        }));
+                    })
+                );
+
+                const combined = allRuns.flat();
+                const sourceTokens = buildSearchTokens(query);
+                const bestByUrl = new Map();
+
+                const scoreResult = (result) => {
+                    const haystack = `${result.title || ''} ${result.url || ''} ${result.site || ''}`.toLowerCase();
+                    let score = 0;
+
+                    sourceTokens.forEach(token => {
+                        if (haystack.includes(token)) score += 2;
+                    });
+
+                    buildSearchTokens(result.matchedQuery || '').forEach(token => {
+                        if (haystack.includes(token)) score += 1;
+                    });
+
+                    if (/(pattern|crochet|knit|amigurumi)/i.test(haystack)) score += 1;
+                    return score;
+                };
+
+                combined.forEach(result => {
+                    if (!result || !result.url || !result.title) return;
                     const normalized = result.url.toLowerCase();
-                    if (seen.has(normalized)) return false;
-                    seen.add(normalized);
-                    return true;
+                    const score = scoreResult(result);
+                    const existing = bestByUrl.get(normalized);
+                    if (!existing || score > existing._score) {
+                        bestByUrl.set(normalized, { ...result, _score: score });
+                    }
                 });
+
+                const unique = Array.from(bestByUrl.values())
+                    .sort((a, b) => b._score - a._score)
+                    .map(({ _score, ...result }) => result);
 
                 if (!unique.length) {
                     const curatedFallback = getCuratedPatternFallback(query);
                     return curatedFallback;
                 }
-                
+
                 return unique.slice(0, 20);
             } catch (err) {
                 console.error('Multi-source search failed:', err);
@@ -776,13 +882,15 @@
         }
 
         function buildPatternSearchQuery(rawQuery) {
-            const source = String(rawQuery || '').replace(/\s+/g, ' ').trim();
-            if (!source) return 'crochet pattern';
+            const variants = buildSearchKeywordVariants(rawQuery);
+            if (!variants.length) return 'crochet pattern';
+            if (variants.length === 1) return variants[0];
 
-            const hasPatternIntent = /(crochet|knit|pattern|amigurumi|blanket|beanie|shawl|scarf|sweater|hat|cardigan|granny)/i.test(source);
-            if (hasPatternIntent) return source;
+            const phraseParts = variants
+                .slice(0, 3)
+                .map(item => `"${item.replace(/"/g, '')}"`);
 
-            return `${source} crochet pattern`;
+            return `${phraseParts.join(' OR ')} crochet pattern`;
         }
 
         function buildYarnQuery(yarn) {
@@ -941,7 +1049,8 @@
         }
 
         function buildSourceSearchUrl(host, query) {
-            const searchQuery = buildPatternSearchQuery(query);
+            const variantQuery = buildSearchKeywordVariants(query)[0] || query;
+            const searchQuery = buildPatternSearchQuery(variantQuery);
             const encodedQuery = encodeURIComponent(searchQuery);
 
             if (host === 'ravelry.com') {
