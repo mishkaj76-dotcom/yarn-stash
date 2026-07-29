@@ -2130,6 +2130,13 @@
             const following = getFollowing();
             const currentFollows = following[currentUser] || [];
 
+            const keywordInput = document.getElementById('challenge-forum-search');
+            const statusInput = document.getElementById('challenge-forum-status');
+            const sortInput = document.getElementById('challenge-forum-sort');
+            const keyword = (keywordInput ? keywordInput.value : '').trim().toLowerCase();
+            const statusFilter = statusInput ? statusInput.value : 'all';
+            const sortFilter = sortInput ? sortInput.value : 'newest';
+
             const challengeComposer = `
                 <div class="glass p-6 rounded-3xl">
                     <h3 class="text-xl font-semibold mb-2 text-[#2f211d]">Create a Stash Challenge</h3>
@@ -2142,11 +2149,60 @@
                 </div>
             `;
 
-            const challengeCards = challenges.length === 0 ? `
-                <div class="glass p-6 rounded-3xl text-center text-[#2f211d]">
-                    <p class="mb-2">No active stash challenges yet.</p>
+            const filterBar = `
+                <div class="glass p-4 rounded-3xl">
+                    <p class="text-sm font-semibold text-[#2f211d] mb-3">Filter Challenge Threads</p>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <input id="challenge-forum-search" type="text" value="${keyword.replace(/"/g, '&quot;')}" oninput="renderChallengeForum()" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]" placeholder="Search title, author, prompt...">
+                        <select id="challenge-forum-status" onchange="renderChallengeForum()" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]">
+                            <option value="all" ${statusFilter === 'all' ? 'selected' : ''}>All threads</option>
+                            <option value="mine" ${statusFilter === 'mine' ? 'selected' : ''}>My threads</option>
+                            <option value="joined" ${statusFilter === 'joined' ? 'selected' : ''}>Joined</option>
+                            <option value="open" ${statusFilter === 'open' ? 'selected' : ''}>Open to join</option>
+                            <option value="following" ${statusFilter === 'following' ? 'selected' : ''}>From creators I follow</option>
+                        </select>
+                        <select id="challenge-forum-sort" onchange="renderChallengeForum()" class="w-full p-3 rounded-2xl bg-[#f5eef7] text-[#2f211d] border border-[#e6d7e4]">
+                            <option value="newest" ${sortFilter === 'newest' ? 'selected' : ''}>Newest first</option>
+                            <option value="deadline" ${sortFilter === 'deadline' ? 'selected' : ''}>Closest deadline</option>
+                            <option value="popular" ${sortFilter === 'popular' ? 'selected' : ''}>Most participants</option>
+                        </select>
+                    </div>
                 </div>
-            ` : challenges.map(challenge => {
+            `;
+
+            const filtered = challenges.filter(challenge => {
+                const participants = challenge.participants || [];
+                const hasJoined = participants.includes(currentUser);
+                const isOwner = challenge.author === currentUser;
+                const fromFollowing = currentFollows.includes(challenge.author);
+
+                if (statusFilter === 'mine' && !isOwner) return false;
+                if (statusFilter === 'joined' && !hasJoined) return false;
+                if (statusFilter === 'open' && (isOwner || hasJoined)) return false;
+                if (statusFilter === 'following' && !fromFollowing) return false;
+
+                if (!keyword) return true;
+                const haystack = `${challenge.title || ''} ${challenge.prompt || ''} ${challenge.author || ''}`.toLowerCase();
+                return haystack.includes(keyword);
+            });
+
+            if (sortFilter === 'deadline') {
+                filtered.sort((a, b) => {
+                    const aTime = a.deadline ? new Date(a.deadline).getTime() : Number.MAX_SAFE_INTEGER;
+                    const bTime = b.deadline ? new Date(b.deadline).getTime() : Number.MAX_SAFE_INTEGER;
+                    return aTime - bTime;
+                });
+            } else if (sortFilter === 'popular') {
+                filtered.sort((a, b) => (b.participants || []).length - (a.participants || []).length);
+            } else {
+                filtered.sort((a, b) => b.createdAt - a.createdAt);
+            }
+
+            const challengeCards = filtered.length === 0 ? `
+                <div class="glass p-6 rounded-3xl text-center text-[#2f211d]">
+                    <p class="mb-2">No challenge threads matched your filters.</p>
+                </div>
+            ` : filtered.map(challenge => {
                 const participants = challenge.participants || [];
                 const hasJoined = participants.includes(currentUser);
                 const isOwner = challenge.author === currentUser;
@@ -2177,7 +2233,7 @@
                 `;
             }).join('');
 
-            forum.innerHTML = challengeComposer + challengeCards;
+            forum.innerHTML = challengeComposer + filterBar + challengeCards;
         }
 
         function getCommunityPosts() {
