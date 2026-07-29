@@ -546,10 +546,11 @@
         }
 
         function buildSearchTokens(query) {
-            return (query || '')
+            return String(query || '')
                 .toLowerCase()
-                .split(/\W+/)
-                .filter(t => t && t.length > 2 && !['crochet', 'pattern', 'yarn', 'hook', 'mm', 'yards', 'yardage', 'g'].includes(t));
+                .replace(/[^a-z0-9.\s-]+/g, ' ')
+                .split(/\s+/)
+                .filter(t => t && t.length > 1 && !['and', 'the', 'for', 'with', 'from', 'your', 'this'].includes(t));
         }
 
         async function fetchThroughCorsProxy(url) {
@@ -775,29 +776,13 @@
         }
 
         function buildPatternSearchQuery(rawQuery) {
-            const source = String(rawQuery || '').trim();
-            const seen = new Set();
-            const terms = [];
+            const source = String(rawQuery || '').replace(/\s+/g, ' ').trim();
+            if (!source) return 'crochet pattern';
 
-            const addTerm = (value) => {
-                const normalized = String(value || '').trim().toLowerCase();
-                if (!normalized) return;
-                const cleaned = normalized.replace(/[^a-z0-9]+/g, ' ').trim();
-                if (!cleaned) return;
-                cleaned.split(/\s+/).forEach(token => {
-                    if (!token || ['and', 'the', 'for', 'with', 'a', 'an', 'of', 'from', 'in', 'on', 'to', 'at', 'my', 'using'].includes(token)) return;
-                    if (seen.has(token)) return;
-                    seen.add(token);
-                    terms.push(token);
-                });
-            };
+            const hasPatternIntent = /(crochet|knit|pattern|amigurumi|blanket|beanie|shawl|scarf|sweater|hat|cardigan|granny)/i.test(source);
+            if (hasPatternIntent) return source;
 
-            if (source) {
-                addTerm(source);
-            }
-
-            ['crochet', 'pattern', 'color', 'hook'].forEach(addTerm);
-            return terms.join(' ');
+            return `${source} crochet pattern`;
         }
 
         function buildYarnQuery(yarn) {
