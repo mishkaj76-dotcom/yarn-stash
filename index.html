@@ -786,6 +786,7 @@
             if (/(pattern|tutorial|free pattern|how to)/i.test(combined)) score += 3;
             if (/(amigurumi|blanket|shawl|beanie|hat|scarf|sweater|cardigan)/i.test(combined)) score += 2;
             if (/(\/pattern|\/patterns|\/tutorial)/i.test(url)) score += 2;
+            if (/lovecrafts\.com/.test(url)) score += 2;
             if (isSearchLikePatternUrl(url)) score -= 4;
             if (/(search results|no results|tag\b|category\b)/i.test(combined)) score -= 3;
 
@@ -974,6 +975,67 @@
             }
         }
 
+        async function searchLoveCraftsResults(query) {
+            const fallbackUrl = 'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns';
+            try {
+                const searchUrl = `https://www.lovecrafts.com/en-us/search?query=${encodeURIComponent(query)}`;
+                const html = await fetchThroughCorsProxy(searchUrl);
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const queryTokens = buildSearchTokens(query);
+                const anchors = Array.from(doc.querySelectorAll('a[href*="/p/"], a[href*="/pattern"], a[href*="/patterns/"]'));
+                const results = [];
+                const seen = new Set();
+
+                for (const anchor of anchors) {
+                    if (results.length >= 8) break;
+                    const href = anchor.getAttribute('href');
+                    if (!href) continue;
+
+                    let normalized = '';
+                    try {
+                        normalized = new URL(href, 'https://www.lovecrafts.com').toString();
+                    } catch {
+                        continue;
+                    }
+
+                    if (!normalized.includes('lovecrafts.com')) continue;
+                    if (seen.has(normalized)) continue;
+
+                    const text = (anchor.textContent || '').replace(/\s+/g, ' ').trim();
+                    const combined = `${text} ${normalized}`.toLowerCase();
+                    const hasPatternWord = /(pattern|crochet|knit|weaving|spinning|dye)/i.test(combined);
+                    const hasQueryToken = queryTokens.some(tok => combined.includes(tok));
+                    if (!hasPatternWord && !hasQueryToken) continue;
+
+                    seen.add(normalized);
+                    results.push({
+                        title: text || 'LoveCrafts pattern',
+                        url: normalized,
+                        site: 'LoveCrafts'
+                    });
+                }
+
+                if (!results.length) {
+                    return [{
+                        title: 'Browse LoveCrafts Free Crochet Patterns',
+                        url: fallbackUrl,
+                        site: 'LoveCrafts',
+                        isExactPattern: false
+                    }];
+                }
+
+                return results;
+            } catch (err) {
+                console.warn('LoveCrafts search failed:', err);
+                return [{
+                    title: 'Browse LoveCrafts Free Crochet Patterns',
+                    url: fallbackUrl,
+                    site: 'LoveCrafts',
+                    isExactPattern: false
+                }];
+            }
+        }
+
         async function searchMultipleSources(query) {
             console.log('Searching multiple sources for:', query);
             try {
@@ -981,12 +1043,13 @@
                 const queryVariants = buildSearchKeywordVariants(query);
                 const allRuns = await Promise.all(
                     queryVariants.map(async variant => {
-                        const [localResults, ddgResults, bingResults] = await Promise.all([
+                        const [localResults, ddgResults, bingResults, lovecraftsResults] = await Promise.all([
                             searchViaLocalScraper(variant),
                             browserDuckDuckGoSearch(variant),
-                            searchBingResults(variant)
+                            searchBingResults(variant),
+                            searchLoveCraftsResults(variant)
                         ]);
-                        return [...localResults, ...ddgResults, ...bingResults].map(item => ({
+                        return [...localResults, ...ddgResults, ...bingResults, ...lovecraftsResults].map(item => ({
                             ...item,
                             matchedQuery: variant
                         }));
