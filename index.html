@@ -631,6 +631,44 @@
                 .filter(t => t && t.length > 1 && !['and', 'the', 'for', 'with', 'from', 'your', 'this'].includes(t));
         }
 
+        function parseSearchIntent(rawQuery) {
+            const source = String(rawQuery || '').toLowerCase().replace(/\s+/g, ' ').trim();
+            const tokens = buildSearchTokens(source);
+
+            const crafts = [];
+            if (/\bcrochet\b/.test(source)) crafts.push('crochet');
+            if (/\bknit|knitting\b/.test(source)) crafts.push('knitting');
+            if (/\bweav|weaving\b/.test(source)) crafts.push('weaving');
+            if (/\bspin|spinning\b/.test(source)) crafts.push('spinning');
+            if (/\bdye|dyeing|dyed\b/.test(source)) crafts.push('dyeing');
+            if (!crafts.length) crafts.push('crochet');
+
+            const hooks = Array.from(new Set(
+                [...source.matchAll(/(\d+(?:\.\d+)?)\s*mm\b/g)].map(match => `${match[1]}mm`)
+            ));
+
+            const weightMatches = Array.from(new Set(
+                [...source.matchAll(/\b([0-7])\b/g)].map(match => `weight ${match[1]}`)
+            ));
+            const weightWords = ['lace', 'super fine', 'fine', 'light', 'medium', 'bulky', 'super bulky', 'jumbo']
+                .filter(word => new RegExp(`\\b${word}\\b`, 'i').test(source));
+
+            const colorTerms = [
+                'orange', 'red', 'blue', 'green', 'yellow', 'purple', 'pink', 'teal', 'turquoise',
+                'brown', 'black', 'white', 'gray', 'grey', 'cream', 'beige', 'navy', 'gold', 'silver'
+            ];
+            const colors = colorTerms.filter(color => new RegExp(`\\b${color}\\b`, 'i').test(source));
+
+            return {
+                source,
+                tokens,
+                crafts: Array.from(new Set(crafts)),
+                hooks,
+                weights: Array.from(new Set([...weightMatches, ...weightWords])),
+                colors
+            };
+        }
+
         function extractPatternKeywords(rawInput) {
             const source = String(rawInput || '').toLowerCase().replace(/\s+/g, ' ').trim();
             if (!source) {
@@ -683,14 +721,16 @@
         function buildSearchKeywordVariants(rawQuery) {
             const source = String(rawQuery || '').replace(/\s+/g, ' ').trim();
             const { hooks, colors, weights, extras } = extractPatternKeywords(source);
+            const intent = parseSearchIntent(source);
+            const craftKeyword = intent.crafts[0] || 'crochet';
             const variants = [];
 
-            hooks.forEach(hook => variants.push(`${hook} hook crochet pattern`));
-            colors.forEach(color => variants.push(`${color} crochet pattern`));
-            weights.forEach(weight => variants.push(`${weight} yarn crochet pattern`));
+            hooks.forEach(hook => variants.push(`${hook} ${craftKeyword} pattern`));
+            colors.forEach(color => variants.push(`${color} ${craftKeyword} pattern`));
+            weights.forEach(weight => variants.push(`${weight} yarn ${craftKeyword} pattern`));
 
             if (extras.length) {
-                variants.push(`${extras.slice(0, 3).join(' ')} crochet pattern`);
+                variants.push(`${extras.slice(0, 3).join(' ')} ${craftKeyword} pattern`);
             }
 
             if (source) {
@@ -698,10 +738,58 @@
             }
 
             if (!variants.length) {
-                variants.push('crochet pattern');
+                variants.push(`${craftKeyword} pattern`);
             }
 
             return Array.from(new Set(variants.map(item => item.trim()).filter(Boolean))).slice(0, 5);
+        }
+
+        function isLowSignalResultUrl(urlValue) {
+            try {
+                const parsed = new URL(urlValue);
+                const host = parsed.hostname.toLowerCase();
+                const url = parsed.toString().toLowerCase();
+                if (/\.(png|jpe?g|gif|webp|svg|mp4|webm)$/i.test(parsed.pathname)) return true;
+                if (host.includes('pinterest.') || host.includes('instagram.') || host.includes('facebook.') || host.includes('tiktok.')) return true;
+                if (url.includes('/cdn-cgi/l/email-protection')) return true;
+                return false;
+            } catch {
+                return true;
+            }
+        }
+
+        function scorePatternResult(result, intent) {
+            const title = String(result.title || '').toLowerCase();
+            const url = String(result.url || '').toLowerCase();
+            const site = String(result.site || '').toLowerCase();
+            const matchedQuery = String(result.matchedQuery || '').toLowerCase();
+            const combined = `${title} ${url} ${site} ${matchedQuery}`;
+
+            let score = 0;
+
+            intent.tokens.forEach(token => {
+                if (combined.includes(token)) score += 2;
+            });
+            intent.crafts.forEach(craft => {
+                if (combined.includes(craft)) score += 4;
+            });
+            intent.hooks.forEach(hook => {
+                if (combined.includes(hook)) score += 5;
+            });
+            intent.colors.forEach(color => {
+                if (combined.includes(color)) score += 3;
+            });
+            intent.weights.forEach(weight => {
+                if (combined.includes(weight)) score += 3;
+            });
+
+            if (/(pattern|tutorial|free pattern|how to)/i.test(combined)) score += 3;
+            if (/(amigurumi|blanket|shawl|beanie|hat|scarf|sweater|cardigan)/i.test(combined)) score += 2;
+            if (/(\/pattern|\/patterns|\/tutorial)/i.test(url)) score += 2;
+            if (isSearchLikePatternUrl(url)) score -= 4;
+            if (/(search results|no results|tag\b|category\b)/i.test(combined)) score -= 3;
+
+            return score;
         }
 
         async function fetchThroughCorsProxy(url) {
@@ -746,7 +834,8 @@
                     .map(item => ({
                         title: item.title,
                         url: item.url,
-                        site: item.site || 'Yarniverse'
+                        site: item.site || 'Yarniverse',
+                        snippet: item.snippet || ''
                     }))
                     .slice(0, 20);
             } catch (err) {
@@ -888,6 +977,7 @@
         async function searchMultipleSources(query) {
             console.log('Searching multiple sources for:', query);
             try {
+                const intent = parseSearchIntent(query);
                 const queryVariants = buildSearchKeywordVariants(query);
                 const allRuns = await Promise.all(
                     queryVariants.map(async variant => {
@@ -904,30 +994,15 @@
                 );
 
                 const combined = allRuns.flat();
-                const sourceTokens = buildSearchTokens(query);
                 const bestByUrl = new Map();
-
-                const scoreResult = (result) => {
-                    const haystack = `${result.title || ''} ${result.url || ''} ${result.site || ''}`.toLowerCase();
-                    let score = 0;
-
-                    sourceTokens.forEach(token => {
-                        if (haystack.includes(token)) score += 2;
-                    });
-
-                    buildSearchTokens(result.matchedQuery || '').forEach(token => {
-                        if (haystack.includes(token)) score += 1;
-                    });
-
-                    if (/(pattern|crochet|knit|amigurumi)/i.test(haystack)) score += 1;
-                    return score;
-                };
 
                 combined.forEach(result => {
                     if (!result || !result.url || !result.title) return;
                     if (isBlockedPatternDomain(result.url)) return;
+                    if (isLowSignalResultUrl(result.url)) return;
                     const normalized = result.url.toLowerCase();
-                    const score = scoreResult(result);
+                    const score = scorePatternResult(result, intent);
+                    if (score < 3) return;
                     const existing = bestByUrl.get(normalized);
                     if (!existing || score > existing._score) {
                         bestByUrl.set(normalized, { ...result, _score: score });
