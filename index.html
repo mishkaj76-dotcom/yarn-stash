@@ -439,6 +439,17 @@
             weaving: 'Reed',
             dyeing: 'Batch'
         };
+        const EXTRA_PATTERN_HOSTS = [
+            'lovecrafts.com',
+            'allfreecrochet.com',
+            'yarnspirations.com',
+            'lionbrand.com',
+            'garnstudio.com',
+            'hobbii.com',
+            'ribblr.com',
+            'mooglyblog.com',
+            'allaboutami.com'
+        ];
         let currentUser = null;
         let yarnStash = [];
         let selectedProfileUser = null;
@@ -1036,11 +1047,54 @@
             }
         }
 
+        async function searchDuckDuckGoSiteScoped(query, host, maxResults = 4) {
+            try {
+                const scopedQuery = `site:${host} ${query}`;
+                const html = await fetchThroughCorsProxy(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(scopedQuery)}`);
+                const doc = new DOMParser().parseFromString(html, 'text/html');
+                const anchors = Array.from(doc.querySelectorAll('a.result__a, a[data-testid="result-title-a"]'));
+                const queryTokens = buildSearchTokens(query);
+                const results = [];
+                const seen = new Set();
+
+                for (const anchor of anchors) {
+                    if (results.length >= maxResults) break;
+                    const href = anchor.getAttribute('href');
+                    const text = (anchor.textContent || '').replace(/\s+/g, ' ').trim();
+                    if (!href || !text) continue;
+
+                    const normalized = normalizeDuckDuckGoLink(href) || href;
+                    if (!normalized) continue;
+                    if (seen.has(normalized)) continue;
+                    if (!normalized.toLowerCase().includes(host)) continue;
+                    if (normalized.includes('duckduckgo.com') || normalized.includes('google.com/search') || normalized.includes('bing.com/search')) continue;
+
+                    const combined = `${text} ${normalized}`.toLowerCase();
+                    const hasPatternSignal = /(pattern|tutorial|crochet|knit|weav|spin|dye)/i.test(combined);
+                    const hasQueryToken = queryTokens.some(tok => combined.includes(tok));
+                    if (!hasPatternSignal && !hasQueryToken) continue;
+
+                    seen.add(normalized);
+                    results.push({
+                        title: text,
+                        url: normalized,
+                        site: `DuckDuckGo • ${host}`
+                    });
+                }
+
+                return results;
+            } catch (err) {
+                console.warn(`Site-scoped search failed for ${host}:`, err);
+                return [];
+            }
+        }
+
         async function searchMultipleSources(query) {
             console.log('Searching multiple sources for:', query);
             try {
                 const intent = parseSearchIntent(query);
                 const queryVariants = buildSearchKeywordVariants(query);
+                const primaryVariant = queryVariants[0] || query;
                 const allRuns = await Promise.all(
                     queryVariants.map(async variant => {
                         const [localResults, ddgResults, bingResults, lovecraftsResults] = await Promise.all([
@@ -1056,7 +1110,18 @@
                     })
                 );
 
-                const combined = allRuns.flat();
+                const scopedRuns = await Promise.all(
+                    EXTRA_PATTERN_HOSTS.map(host => searchDuckDuckGoSiteScoped(primaryVariant, host, 3))
+                );
+
+                const scopedResults = scopedRuns
+                    .flat()
+                    .map(item => ({
+                        ...item,
+                        matchedQuery: primaryVariant
+                    }));
+
+                const combined = [...allRuns.flat(), ...scopedResults];
                 const bestByUrl = new Map();
 
                 combined.forEach(result => {
@@ -1065,7 +1130,7 @@
                     if (isLowSignalResultUrl(result.url)) return;
                     const normalized = result.url.toLowerCase();
                     const score = scorePatternResult(result, intent);
-                    if (score < 3) return;
+                    if (score < 1) return;
                     const existing = bestByUrl.get(normalized);
                     if (!existing || score > existing._score) {
                         bestByUrl.set(normalized, { ...result, _score: score });
@@ -1081,7 +1146,7 @@
                     return curatedFallback;
                 }
 
-                return unique.slice(0, 20);
+                return unique.slice(0, 30);
             } catch (err) {
                 console.error('Multi-source search failed:', err);
                 return getCuratedPatternFallback(query);
@@ -1392,7 +1457,7 @@
                 }
 
                 resultsRoot.innerHTML = '';
-                finalResults.slice(0, 12).forEach(item => {
+                finalResults.slice(0, 18).forEach(item => {
                     const safeUrl = buildWorkingPatternLink(item.url, query);
                     if (!safeUrl) return;
                     const opensSearch = isSearchLikePatternUrl(safeUrl);
