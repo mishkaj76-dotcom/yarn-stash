@@ -1130,7 +1130,7 @@
                     if (isLowSignalResultUrl(result.url)) return;
                     const normalized = result.url.toLowerCase();
                     const score = scorePatternResult(result, intent);
-                    if (score < 1) return;
+                    if (score < 0) return;
                     const existing = bestByUrl.get(normalized);
                     if (!existing || score > existing._score) {
                         bestByUrl.set(normalized, { ...result, _score: score });
@@ -1143,13 +1143,41 @@
 
                 if (!unique.length) {
                     const curatedFallback = getCuratedPatternFallback(query);
-                    return curatedFallback;
+                    const trustedFallback = buildTrustedSourceResults(query).slice(0, 12).map(item => ({
+                        ...item,
+                        isExactPattern: false
+                    }));
+                    return [...curatedFallback, ...trustedFallback].slice(0, 30);
+                }
+
+                // If live scraping is sparse (often due CORS/proxy limits), add trusted source search links.
+                if (unique.length < 12) {
+                    const seen = new Set(unique.map(item => String(item.url || '').toLowerCase()));
+                    const trustedTopUp = buildTrustedSourceResults(query)
+                        .filter(item => {
+                            const normalized = String(item.url || '').toLowerCase();
+                            if (!normalized || seen.has(normalized)) return false;
+                            seen.add(normalized);
+                            return true;
+                        })
+                        .slice(0, 12)
+                        .map(item => ({
+                            ...item,
+                            isExactPattern: false
+                        }));
+
+                    return [...unique, ...trustedTopUp].slice(0, 30);
                 }
 
                 return unique.slice(0, 30);
             } catch (err) {
                 console.error('Multi-source search failed:', err);
-                return getCuratedPatternFallback(query);
+                const curatedFallback = getCuratedPatternFallback(query);
+                const trustedFallback = buildTrustedSourceResults(query).slice(0, 12).map(item => ({
+                    ...item,
+                    isExactPattern: false
+                }));
+                return [...curatedFallback, ...trustedFallback].slice(0, 30);
             }
         }
 
@@ -1336,18 +1364,9 @@
             'https://www.crochetbecreative.com/',
             'https://www.lillabjorncrochet.com/',
             'https://www.hookedbyrobin.com/',
-            'https://www.yarnspirations.com/collections/patterns?filter.p.m.global.craft=Crochet&filter.v.price.gte=0&filter.v.price.lte=0',
-            'https://www.lionbrand.com/collections/crochet-patterns?filter.v.price.gte=0&filter.v.price.lte=0',
-            'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns',
-            'https://hobbii.com/product-patterns/free-patterns',
-            'https://www.garnstudio.com/search.php?c=crochet&lang=en',
-            'https://www.allfreecrochet.com/tag/Beginner',
-            'https://www.allfreecrochet.com/Crochet-Afghan-Patterns/Worlds-Easiest-Afghan-Caron-Yarns',
-            'https://www.allfreecrochet.com/Hats/Simple-Beanie-194893',
-            'https://www.allfreecrochet.com/Crochet-Amigurumi-Patterns/Nogard-The-No-sew-Dragon-194849',
-            'https://www.allfreecrochet.com/Sweaters/Arlo-Granny-Square-Cardigan',
-            'https://www.allfreecrochet.com/Crochet-Bag-Patterns/Eclipse-Bottle-Holder',
-            'https://www.allfreecrochet.com/Miscellaneous-Crochet/Shift-Granny-Square-153910'
+            'https://www.crochetbytracy.com/',
+            'https://www.crochetwithruth.com/',
+    
         ];
 
         function getTrustedSourceHosts() {
