@@ -153,6 +153,13 @@
                             <button onclick="openAuthFromHome('login')" class="btn-primary px-6 py-3 rounded-xl font-semibold">Login</button>
                             <button onclick="openAuthFromHome('signup')" class="px-6 py-3 rounded-xl bg-white/80 text-[#5f483c] font-semibold border border-white/70">Create Account</button>
                         </div>
+                        <div id="home-session-actions" class="mt-4 hidden-section">
+                            <p id="home-session-label" class="text-sm text-[#5f483c] mb-2"></p>
+                            <div class="flex flex-col sm:flex-row gap-2">
+                                <button id="home-continue-btn" onclick="continueSavedSession()" class="btn-primary px-6 py-3 rounded-xl font-semibold">Continue previous session</button>
+                                <button id="home-clear-session-btn" onclick="clearSavedSessionFromHome()" class="px-6 py-3 rounded-xl bg-white/80 text-[#5f483c] font-semibold border border-white/70">Use different account</button>
+                            </div>
+                        </div>
                     </div>
                     <div class="glass rounded-2xl p-5 md:p-6 w-full md:max-w-sm">
                         <h2 class="text-xl font-semibold text-[#2f211d] mb-3">What you can do</h2>
@@ -225,7 +232,7 @@
         <div class="absolute inset-0 bg-black/50" onclick="closeForgotPasswordModal()"></div>
         <div class="glass relative z-10 w-full max-w-md p-6 md:p-8 rounded-2xl">
             <h3 class="text-2xl font-bold text-[#2f211d]">Reset Password</h3>
-            <p class="text-sm text-[#5f483c] mt-2">Verify your username and email, then set a new password.</p>
+            <p class="text-sm text-[#5f483c] mt-2">Enter your email first. We will send a verification code before allowing reset.</p>
             <div class="mt-5 space-y-3">
                 <div>
                     <label class="block text-sm font-medium mb-1 text-[#555555]">Username</label>
@@ -234,6 +241,13 @@
                 <div>
                     <label class="block text-sm font-medium mb-1 text-[#555555]">Email verification</label>
                     <input type="email" id="forgot-email" class="w-full p-3 rounded-lg border-none" placeholder="Enter account email...">
+                </div>
+                <div>
+                    <button onclick="sendResetVerificationEmail()" class="w-full py-3 rounded-lg font-semibold bg-white/80 text-[#5f483c] border border-white/70">Send verification email</button>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1 text-[#555555]">Verification code from email</label>
+                    <input type="text" id="forgot-verification-code" class="w-full p-3 rounded-lg border-none" placeholder="Enter 6-digit code" maxlength="6">
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1 text-[#555555]">New password</label>
@@ -246,7 +260,7 @@
                 <p id="forgot-password-error" class="hidden text-red-500 text-xs font-semibold"></p>
                 <p id="forgot-password-success" class="hidden text-green-600 text-xs font-semibold"></p>
                 <div class="flex flex-col sm:flex-row gap-2 pt-2">
-                    <button onclick="handleForgotPasswordReset()" class="btn-primary w-full py-3 rounded-lg font-semibold">Verify & Reset</button>
+                    <button onclick="handleForgotPasswordReset()" class="btn-primary w-full py-3 rounded-lg font-semibold">Verify code & Reset</button>
                     <button onclick="closeForgotPasswordModal()" class="w-full py-3 rounded-lg font-semibold bg-white/70 text-[#5f483c]">Cancel</button>
                 </div>
             </div>
@@ -1900,6 +1914,7 @@
             document.getElementById('app-main').classList.add('hidden-section');
             closeForgotPasswordModal();
             document.getElementById('auth-password').value = '';
+            renderHomeSessionActions();
         }
 
         function openForgotPasswordModal() {
@@ -1925,6 +1940,67 @@
                 successEl.classList.add('hidden');
                 successEl.innerText = '';
             }
+        }
+
+        function getPasswordResetRequests() {
+            try {
+                return JSON.parse(localStorage.getItem('yarnstash_password_reset_requests')) || {};
+            } catch {
+                return {};
+            }
+        }
+
+        function savePasswordResetRequests(requests) {
+            localStorage.setItem('yarnstash_password_reset_requests', JSON.stringify(requests || {}));
+        }
+
+        function sendResetVerificationEmail() {
+            clearForgotPasswordMessages();
+            const username = document.getElementById('forgot-username').value.trim();
+            const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+
+            if (!username || !email) {
+                showForgotPasswordError('Enter your username and account email first.');
+                return;
+            }
+
+            const userRegistry = getUserRegistry();
+            const userRecord = userRegistry[username];
+            if (!userRecord) {
+                showForgotPasswordError('No account found with that username.');
+                return;
+            }
+
+            const savedEmail = String(userRecord.email || '').toLowerCase();
+            if (!savedEmail || savedEmail !== email) {
+                showForgotPasswordError('Email does not match this username.');
+                return;
+            }
+
+            const verificationCode = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+            const expiresAt = Date.now() + 10 * 60 * 1000;
+            const requests = getPasswordResetRequests();
+            requests[username] = {
+                email,
+                verificationCode,
+                expiresAt,
+                requestedAt: Date.now()
+            };
+            savePasswordResetRequests(requests);
+
+            // Browser-only fallback: open a prefilled email draft with the verification code.
+            const subject = encodeURIComponent('YarnStash Password Reset Verification');
+            const body = encodeURIComponent(
+                `Hi ${username},\n\nYour YarnStash password reset verification code is: ${verificationCode}\n\nThis code expires in 10 minutes.`
+            );
+            const mailto = `mailto:${encodeURIComponent(email)}?subject=${subject}&body=${body}`;
+            try {
+                window.location.href = mailto;
+            } catch (err) {
+                console.warn('Could not open mail client:', err);
+            }
+
+            showForgotPasswordSuccess('Verification email prepared. Check your email app for the 6-digit code.');
         }
 
         function showForgotPasswordError(message) {
@@ -1958,11 +2034,12 @@
 
             const username = document.getElementById('forgot-username').value.trim();
             const email = document.getElementById('forgot-email').value.trim().toLowerCase();
+            const code = document.getElementById('forgot-verification-code').value.trim();
             const newPassword = document.getElementById('forgot-new-password').value.trim();
             const confirmPassword = document.getElementById('forgot-confirm-password').value.trim();
 
-            if (!username || !email || !newPassword || !confirmPassword) {
-                showForgotPasswordError('Please complete all verification fields.');
+            if (!username || !email || !code || !newPassword || !confirmPassword) {
+                showForgotPasswordError('Please complete all verification fields including the email code.');
                 return;
             }
             if (newPassword.length < 4) {
@@ -1987,10 +2064,32 @@
                 return;
             }
 
+            const requests = getPasswordResetRequests();
+            const request = requests[username];
+            if (!request) {
+                showForgotPasswordError('No verification request found. Please send a verification email first.');
+                return;
+            }
+            if (String(request.email || '').toLowerCase() !== email) {
+                showForgotPasswordError('Verification request email does not match.');
+                return;
+            }
+            if (Date.now() > Number(request.expiresAt || 0)) {
+                showForgotPasswordError('Verification code expired. Please request a new email code.');
+                return;
+            }
+            if (String(request.verificationCode || '') !== code) {
+                showForgotPasswordError('Incorrect verification code.');
+                return;
+            }
+
             userRecord.password = newPassword;
             userRecord.verified = true;
             userRegistry[username] = userRecord;
             saveUserRegistry(userRegistry);
+
+            delete requests[username];
+            savePasswordResetRequests(requests);
 
             showForgotPasswordSuccess('Password reset successful. You can login now.');
             document.getElementById('auth-username').value = username;
@@ -1999,6 +2098,42 @@
             setTimeout(() => {
                 closeForgotPasswordModal();
             }, 1200);
+        }
+
+        function renderHomeSessionActions() {
+            const savedSession = localStorage.getItem('yarnstash_current_session');
+            const actions = document.getElementById('home-session-actions');
+            const label = document.getElementById('home-session-label');
+            if (!actions || !label) return;
+
+            if (savedSession) {
+                label.innerText = `Signed in previously as ${savedSession}.`;
+                actions.classList.remove('hidden-section');
+            } else {
+                label.innerText = '';
+                actions.classList.add('hidden-section');
+            }
+        }
+
+        function continueSavedSession() {
+            const savedSession = localStorage.getItem('yarnstash_current_session');
+            if (!savedSession) {
+                showToast('No saved session found.');
+                renderHomeSessionActions();
+                return;
+            }
+            currentUser = savedSession;
+            loadData();
+            loginSuccess();
+        }
+
+        function clearSavedSessionFromHome() {
+            localStorage.removeItem('yarnstash_current_session');
+            currentUser = null;
+            selectedProfileUser = null;
+            yarnStash = [];
+            renderHomeSessionActions();
+            openAuthFromHome('login');
         }
 
         function toggleAuthMode() {
@@ -3456,16 +3591,10 @@
 
         window.onload = () => {
             initCookieConsentControls();
-            const savedSession = localStorage.getItem('yarnstash_current_session');
-            if (savedSession) {
-                currentUser = savedSession;
-                loadData();
-                loginSuccess();
-            } else {
-                document.getElementById('home-section').classList.remove('hidden-section');
-                document.getElementById('auth-section').classList.add('hidden-section');
-                document.getElementById('app-main').classList.add('hidden-section');
-            }
+            document.getElementById('home-section').classList.remove('hidden-section');
+            document.getElementById('auth-section').classList.add('hidden-section');
+            document.getElementById('app-main').classList.add('hidden-section');
+            renderHomeSessionActions();
         };
     </script>
 
