@@ -3395,40 +3395,26 @@
             }
         }
 
-        document.getElementById('yarn-weight').addEventListener('input', (e) => {
-            document.getElementById('weight-val').innerText = weightLabels[e.target.value];
-        });
-
-        document.getElementById('fiber-craft').addEventListener('change', (e) => {
-            const craft = normalizeCraft(e.target.value);
-            const toolLabel = getToolLabel(craft);
-            const toolLabelEl = document.getElementById('tool-size-label');
-            if (toolLabelEl) {
-                toolLabelEl.innerText = `Recommended ${toolLabel} Size *`;
-            }
-        });
-
         document.getElementById('log-form').addEventListener('submit', (e) => {
             e.preventDefault();
-            const craft = normalizeCraft(document.getElementById('fiber-craft').value);
+            const goal = String(document.getElementById('yarn-goal').value || '').trim();
             const color = document.getElementById('yarn-color').value.trim();
-            const hook = document.getElementById('yarn-hook').value;
+            const craft = 'crochet';
 
-            if (!color || !hook) {
-                showToast(`Please add a color and ${getToolLabel(craft).toLowerCase()} size.`);
+            if (!color || !goal) {
+                showToast('Please add a yarn color and your crochet goal.');
                 return;
             }
 
-            const yardageValue = document.getElementById('yarn-yardage').value;
-            const weightValue = document.getElementById('yarn-weight').value;
             const newYarn = {
                 id: `fiber-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-                brand: document.getElementById('yarn-brand').value.trim(),
+                brand: '',
                 color,
                 craft,
-                yardage: yardageValue ? parseInt(yardageValue, 10) : null,
-                weight: weightValue ? parseInt(weightValue, 10) : null,
-                hook,
+                goal,
+                yardage: null,
+                weight: null,
+                hook: '',
                 status: 'Available'
             };
 
@@ -3442,7 +3428,6 @@
             setTimeout(() => { toast.style.display = 'none'; }, 3000);
 
             document.getElementById('log-form').reset();
-            document.getElementById('weight-val').innerText = weightLabels[4];
             renderStash();
             
             // Automatically show pattern finder for the new yarn
@@ -3458,7 +3443,7 @@
                 if (yarn.status === 'Available') {
                     const opt = document.createElement('option');
                     opt.value = idx;
-                    opt.innerText = `${yarn.brand || 'Untitled material'} (${getCraftLabel(yarn.craft)} • ${yarn.color})${yarn.yardage ? ` - ${yarn.yardage}yds` : ''}`;
+                    opt.innerText = `${yarn.color} • ${formatGoalLabel(yarn.goal)}`;
                     dropdown.appendChild(opt);
                 }
             });
