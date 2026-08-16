@@ -533,7 +533,6 @@
             dyeing: 'Batch'
         };
         const EXTRA_PATTERN_HOSTS = [
-            'lovecrafts.com',
             'allfreecrochet.com',
             'yarnspirations.com',
             'lionbrand.com',
@@ -548,12 +547,26 @@
             'yarnspirations.com',
             'lionbrand.com',
             'garnstudio.com',
-            'lovecrafts.com',
             'hobbii.com',
             'ribblr.com',
             'mooglyblog.com',
             'allaboutami.com'
         ];
+        const FREE_FRIENDLY_HOSTS = [
+            'allfreecrochet.com',
+            'garnstudio.com',
+            'mooglyblog.com',
+            'allaboutami.com',
+            'yarnspirations.com',
+            'lionbrand.com',
+            'hobbii.com'
+        ];
+        const TRUSTED_FREE_LIBRARY_URLS = {
+            'allfreecrochet.com': 'https://www.allfreecrochet.com/',
+            'yarnspirations.com': 'https://www.yarnspirations.com/collections/patterns?filter.p.m.global.craft=Crochet&filter.v.price.gte=0&filter.v.price.lte=0',
+            'hobbii.com': 'https://hobbii.com/product-patterns/free-patterns',
+            'garnstudio.com': 'https://www.garnstudio.com/search.php?lang=en&c=crochet&q=free+pattern'
+        };
         let currentUser = null;
         let yarnStash = [];
         let selectedProfileUser = null;
@@ -847,6 +860,7 @@
             const craftKeyword = intent.crafts[0] || 'crochet';
             const variants = [];
 
+            variants.push(`${craftKeyword} free pattern`);
             hooks.forEach(hook => variants.push(`${hook} ${craftKeyword} pattern`));
             colors.forEach(color => variants.push(`${color} ${craftKeyword} pattern`));
             weights.forEach(weight => variants.push(`${weight} yarn ${craftKeyword} pattern`));
@@ -917,7 +931,8 @@
             if (/(pattern|tutorial|free pattern|how to)/i.test(combined)) score += 3;
             if (/(amigurumi|blanket|shawl|beanie|hat|scarf|sweater|cardigan)/i.test(combined)) score += 2;
             if (/(\/pattern|\/patterns|\/tutorial)/i.test(url)) score += 2;
-            if (/lovecrafts\.com/.test(url)) score += 2;
+            if (isLikelyFreePatternResult(result)) score += 8;
+            if (isLikelyPaidPatternResult(result)) score -= 12;
             if (isSearchLikePatternUrl(url)) score -= 4;
             if (/(search results|no results|tag\b|category\b)/i.test(combined)) score -= 3;
 
@@ -938,6 +953,64 @@
             }
 
             return score;
+        }
+
+        function isLikelyFreePatternResult(result) {
+            const title = String(result?.title || '').toLowerCase();
+            const url = String(result?.url || '').toLowerCase();
+            const snippet = String(result?.snippet || '').toLowerCase();
+            const combined = `${title} ${url} ${snippet}`;
+
+            const freeSignals = [
+                /\bfree\b/,
+                /no\s+cost/,
+                /\$0\b|0\$/,
+                /\/free\b|\/free-|free-pattern/,
+                /price\.lte=0/,
+                /free\s+pattern/
+            ];
+
+            return freeSignals.some(signal => signal.test(combined));
+        }
+
+        function isLikelyPaidPatternResult(result) {
+            const title = String(result?.title || '').toLowerCase();
+            const url = String(result?.url || '').toLowerCase();
+            const snippet = String(result?.snippet || '').toLowerCase();
+            const combined = `${title} ${url} ${snippet}`;
+
+            const paidSignals = [
+                /\bpaid\b/,
+                /\bpremium\b/,
+                /\bbuy\b|buy\s+now/,
+                /add\s+to\s+cart|checkout/,
+                /subscription|membership/,
+                /\bshop\b|\/shop\//,
+                /\/product\//,
+                /\/products\//,
+                /\$\s?\d/,
+                /\d\s?usd\b|usd\s?\d/
+            ];
+
+            const hasPaidSignal = paidSignals.some(signal => signal.test(combined));
+            return hasPaidSignal && !isLikelyFreePatternResult(result);
+        }
+
+        function isFreeFriendlyHost(urlValue) {
+            try {
+                const host = new URL(urlValue).hostname.replace(/^www\./, '').toLowerCase();
+                return FREE_FRIENDLY_HOSTS.some(allowed => host === allowed || host.endsWith(`.${allowed}`));
+            } catch {
+                return false;
+            }
+        }
+
+        function isFreeEligibleResult(result) {
+            const urlValue = String(result?.url || '');
+            if (!urlValue) return false;
+            if (isLikelyPaidPatternResult(result)) return false;
+            if (isLikelyFreePatternResult(result)) return true;
+            return isFreeFriendlyHost(urlValue);
         }
 
         async function fetchThroughCorsProxy(url) {
@@ -1153,70 +1226,9 @@
             }
         }
 
-        async function searchLoveCraftsResults(query) {
-            const fallbackUrl = 'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns';
-            try {
-                const searchUrl = `https://www.lovecrafts.com/en-us/search?query=${encodeURIComponent(query)}`;
-                const html = await fetchThroughCorsProxy(searchUrl);
-                const doc = new DOMParser().parseFromString(html, 'text/html');
-                const queryTokens = buildSearchTokens(query);
-                const anchors = Array.from(doc.querySelectorAll('a[href*="/p/"], a[href*="/pattern"], a[href*="/patterns/"]'));
-                const results = [];
-                const seen = new Set();
-
-                for (const anchor of anchors) {
-                    if (results.length >= 8) break;
-                    const href = anchor.getAttribute('href');
-                    if (!href) continue;
-
-                    let normalized = '';
-                    try {
-                        normalized = new URL(href, 'https://www.lovecrafts.com').toString();
-                    } catch {
-                        continue;
-                    }
-
-                    if (!normalized.includes('lovecrafts.com')) continue;
-                    if (seen.has(normalized)) continue;
-
-                    const text = (anchor.textContent || '').replace(/\s+/g, ' ').trim();
-                    const combined = `${text} ${normalized}`.toLowerCase();
-                    const hasPatternWord = /(pattern|crochet|knit|weaving|spinning|dye)/i.test(combined);
-                    const hasQueryToken = queryTokens.some(tok => combined.includes(tok));
-                    if (!hasPatternWord && !hasQueryToken) continue;
-
-                    seen.add(normalized);
-                    results.push({
-                        title: text || 'LoveCrafts pattern',
-                        url: normalized,
-                        site: 'LoveCrafts'
-                    });
-                }
-
-                if (!results.length) {
-                    return [{
-                        title: 'Browse LoveCrafts Free Crochet Patterns',
-                        url: fallbackUrl,
-                        site: 'LoveCrafts',
-                        isExactPattern: false
-                    }];
-                }
-
-                return results;
-            } catch (err) {
-                console.warn('LoveCrafts search failed:', err);
-                return [{
-                    title: 'Browse LoveCrafts Free Crochet Patterns',
-                    url: fallbackUrl,
-                    site: 'LoveCrafts',
-                    isExactPattern: false
-                }];
-            }
-        }
-
         async function searchDuckDuckGoSiteScoped(query, host, maxResults = 4) {
             try {
-                const scopedQuery = `site:${host} ${query}`;
+                const scopedQuery = `site:${host} ${query} free pattern`;
                 const html = await fetchThroughCorsProxy(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(scopedQuery)}`);
                 const doc = new DOMParser().parseFromString(html, 'text/html');
                 const anchors = Array.from(doc.querySelectorAll('a.result__a, a[data-testid="result-title-a"]'));
@@ -1265,13 +1277,12 @@
                 const primaryVariant = queryVariants[0] || query;
                 const allRuns = await Promise.all(
                     queryVariants.map(async variant => {
-                        const [localResults, ddgResults, bingResults, lovecraftsResults] = await Promise.all([
+                        const [localResults, ddgResults, bingResults] = await Promise.all([
                             searchViaLocalScraper(variant),
                             browserDuckDuckGoSearch(variant),
-                            searchBingResults(variant),
-                            searchLoveCraftsResults(variant)
+                            searchBingResults(variant)
                         ]);
-                        return [...localResults, ...ddgResults, ...bingResults, ...lovecraftsResults].map(item => ({
+                        return [...localResults, ...ddgResults, ...bingResults].map(item => ({
                             ...item,
                             matchedQuery: variant
                         }));
@@ -1296,6 +1307,7 @@
                     if (!result || !result.url || !result.title) return;
                     if (isBlockedPatternDomain(result.url)) return;
                     if (isLowSignalResultUrl(result.url)) return;
+                    if (isLikelyPaidPatternResult(result)) return;
                     const normalized = result.url.toLowerCase();
                     const score = scorePatternResult(result, intent);
                     if (score < 2) return;
@@ -1309,15 +1321,15 @@
                     .sort((a, b) => b._score - a._score)
                     .map(({ _score, ...result }) => result);
 
-                const directLinks = unique.filter(item => isLikelyDirectPatternUrl(item.url));
-                const articleLinks = unique.filter(item => !isLikelyDirectPatternUrl(item.url) && !isSearchLikePatternUrl(item.url));
-                const searchLinks = unique.filter(item => isSearchLikePatternUrl(item.url));
+                const directLinks = unique.filter(item => isLikelyDirectPatternUrl(item.url) && isFreeEligibleResult(item));
+                const articleLinks = unique.filter(item => !isLikelyDirectPatternUrl(item.url) && !isSearchLikePatternUrl(item.url) && isFreeEligibleResult(item));
+                const searchLinks = unique.filter(item => isSearchLikePatternUrl(item.url) && isFreeEligibleResult(item));
                 const ranked = [...directLinks, ...articleLinks, ...searchLinks];
 
                 if (!ranked.length) {
                     const curatedFallback = getCuratedPatternFallback(webQuery);
-                    const curatedDirect = curatedFallback.filter(item => isLikelyDirectPatternUrl(item.url));
-                    const curatedSearch = curatedFallback.filter(item => !isLikelyDirectPatternUrl(item.url));
+                    const curatedDirect = curatedFallback.filter(item => isLikelyDirectPatternUrl(item.url) && isFreeEligibleResult(item));
+                    const curatedSearch = curatedFallback.filter(item => !isLikelyDirectPatternUrl(item.url) && isFreeEligibleResult(item));
                     const trustedFallback = buildTrustedSourceResults(webQuery).slice(0, 2).map(item => ({
                         ...item,
                         isExactPattern: false
@@ -1349,8 +1361,8 @@
                 console.error('Multi-source search failed:', err);
                 const webQuery = normalizeWebSearchQuery(query);
                 const curatedFallback = getCuratedPatternFallback(webQuery);
-                const curatedDirect = curatedFallback.filter(item => isLikelyDirectPatternUrl(item.url));
-                const curatedSearch = curatedFallback.filter(item => !isLikelyDirectPatternUrl(item.url));
+                const curatedDirect = curatedFallback.filter(item => isLikelyDirectPatternUrl(item.url) && isFreeEligibleResult(item));
+                const curatedSearch = curatedFallback.filter(item => !isLikelyDirectPatternUrl(item.url) && isFreeEligibleResult(item));
                 const trustedFallback = buildTrustedSourceResults(webQuery).slice(0, 2).map(item => ({
                     ...item,
                     isExactPattern: false
@@ -1501,7 +1513,6 @@
             'https://www.yarnspirations.com/',
             'https://www.lionbrand.com/',
             'https://www.garnstudio.com/',
-            'https://www.lovecrafts.com/',
             'https://hobbii.com/',
             'https://www.ribblr.com/',
             'https://www.mamainastitch.com/',
@@ -1600,6 +1611,9 @@
         }
 
         function buildSourceSearchUrl(host, query) {
+            if (TRUSTED_FREE_LIBRARY_URLS[host]) {
+                return TRUSTED_FREE_LIBRARY_URLS[host];
+            }
             const broadQuery = buildBroadPatternFallbackQuery(query) || 'crochet free pattern';
             const siteScopedQuery = `site:${host} ${broadQuery}`;
             return `https://duckduckgo.com/?q=${encodeURIComponent(siteScopedQuery)}`;
@@ -1609,8 +1623,8 @@
             const hosts = getTrustedSourceHosts();
             return hosts.map(host => {
                 return {
-                    title: `Find patterns on ${host}`,
-                    site: 'Trusted source search',
+                    title: `Browse free patterns on ${host}`,
+                    site: 'Trusted free patterns',
                     host,
                     url: buildSourceSearchUrl(host, query)
                 };
@@ -1784,7 +1798,7 @@
                 weight: 3,
                 yardage: 300,
                 hook: '3.5mm',
-                url: 'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns',
+                url: 'https://www.allfreecrochet.com/Crochet-Bag-Patterns/Eclipse-Bottle-Holder',
                 steps: [
                     'Flap: Ch 41. Work in Chevron pattern (2 SC in first, 8 SC, skip 2, 8 SC, 3 SC in next).',
                     'Body: Work 30 rows of Chevron pattern.',
@@ -1811,7 +1825,7 @@
                 weight: 1,
                 yardage: 900,
                 hook: '3.0mm',
-                url: 'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns',
+                url: 'https://www.garnstudio.com/search.php?lang=en&c=crochet&q=shawl',
                 steps: [
                     'Chain 180, then work alternating shell and chain rows.',
                     'Repeat mesh shells for 20 rows.',
@@ -1905,7 +1919,7 @@
                 weight: 4,
                 yardage: 220,
                 hook: '4.5mm',
-                url: 'https://www.lovecrafts.com/en-us/l/crochet/crochet-patterns/free-crochet-patterns',
+                url: 'https://www.yarnspirations.com/collections/patterns?filter.p.m.global.craft=Knit&filter.v.price.gte=0&filter.v.price.lte=0',
                 steps: [
                     'Cast on 88 stitches with 4.5mm circular needles.',
                     'Work 2x2 rib for 7 inches.',
