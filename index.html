@@ -543,6 +543,17 @@
             'mooglyblog.com',
             'allaboutami.com'
         ];
+        const TRUSTED_FALLBACK_HOSTS = [
+            'allfreecrochet.com',
+            'yarnspirations.com',
+            'lionbrand.com',
+            'garnstudio.com',
+            'lovecrafts.com',
+            'hobbii.com',
+            'ribblr.com',
+            'mooglyblog.com',
+            'allaboutami.com'
+        ];
         let currentUser = null;
         let yarnStash = [];
         let selectedProfileUser = null;
@@ -1563,31 +1574,34 @@
         ];
 
         function getTrustedSourceHosts() {
-            const seenHosts = new Set();
-            const hosts = [];
+            return Array.from(new Set(TRUSTED_FALLBACK_HOSTS)).sort((a, b) => a.localeCompare(b));
+        }
 
-            yarniverseTrustedSourceUrls.forEach(urlValue => {
-                try {
-                    const parsed = new URL(urlValue);
-                    const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
-                    if (!host || seenHosts.has(host)) return;
-                    seenHosts.add(host);
-                    hosts.push(host);
-                } catch (err) {
-                    // Ignore malformed source URLs.
-                }
+        function buildBroadPatternFallbackQuery(query) {
+            const normalized = normalizeWebSearchQuery(query || '');
+            const intent = parseSearchIntent(normalized);
+            const tokens = buildSearchTokens(normalized)
+                .filter(token => token !== 'pattern' && token !== 'patterns')
+                .filter(token => !/^\d+(?:\.\d+)?mm$/.test(token))
+                .filter(token => !/^\d+(?:\.\d+)?$/.test(token))
+                .filter(token => !/^weight$/.test(token));
+
+            const seedTerms = [];
+            if (intent.colors.length) seedTerms.push(intent.colors[0]);
+            tokens.forEach(token => {
+                if (seedTerms.length >= 2) return;
+                if (!seedTerms.includes(token)) seedTerms.push(token);
             });
 
-            return hosts.sort((a, b) => a.localeCompare(b));
+            const craft = intent.crafts[0] || 'crochet';
+            return `${seedTerms.join(' ')} ${craft} free pattern`
+                .replace(/\s+/g, ' ')
+                .trim();
         }
 
         function buildSourceSearchUrl(host, query) {
-            const variantQuery = buildSearchKeywordVariants(query)[0] || query;
-            const searchQuery = String(variantQuery || 'crochet pattern')
-                .replace(/["']/g, ' ')
-                .replace(/\s+/g, ' ')
-                .trim() || 'crochet pattern';
-            const siteScopedQuery = `site:${host} ${searchQuery} pattern`;
+            const broadQuery = buildBroadPatternFallbackQuery(query) || 'crochet free pattern';
+            const siteScopedQuery = `site:${host} ${broadQuery}`;
             return `https://duckduckgo.com/?q=${encodeURIComponent(siteScopedQuery)}`;
         }
 
