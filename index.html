@@ -309,49 +309,20 @@
                     <h2 class="text-2xl font-semibold mb-6">Quick Log</h2>
                     <form id="log-form" class="space-y-6">
                         <div>
-                            <label class="block text-sm font-medium mb-2">Craft *</label>
-                            <select id="fiber-craft" class="w-full p-3 rounded-xl" required>
-                                <option value="crochet" selected>Crochet</option>
-                                <option value="knitting">Knitting</option>
-                                <option value="spinning">Spinning</option>
-                                <option value="weaving">Weaving</option>
-                                <option value="dyeing">Dyeing</option>
+                            <label class="block text-sm font-medium mb-2">What do you want to crochet? *</label>
+                            <select id="yarn-goal" class="w-full p-3 rounded-xl" required>
+                                <option value="" selected disabled>Select your crochet goal</option>
+                                <option value="amigurumi">Amigurumi / Plushies</option>
+                                <option value="clothing">Clothing</option>
+                                <option value="accessories">Accessories</option>
+                                <option value="home-decor">Home Decor</option>
+                                <option value="baby">Baby Items</option>
+                                <option value="gifts">Small Gifts</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium mb-2">Brand / Material Name <span class="text-xs text-gray-400">(optional)</span></label>
-                            <input type="text" id="yarn-brand" placeholder="e.g. Malabrigo Rios" class="w-full p-3 rounded-xl">
-                        </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Color *</label>
-                                <input type="text" id="yarn-color" placeholder="e.g. Teal" class="w-full p-3 rounded-xl" required>
-                            </div>
-                            <div>
-                                <label class="block text-sm font-medium mb-2">Yardage <span class="text-xs text-gray-400">(optional)</span></label>
-                                <input type="number" id="yarn-yardage" placeholder="210" class="w-full p-3 rounded-xl">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2 flex justify-between">
-                                <span>Yarn Weight <span class="text-xs text-gray-400">(optional)</span></span>
-                                <span id="weight-val" class="text-[#FEF9FB]">Medium (4)</span>
-                            </label>
-                            <input type="range" id="yarn-weight" min="0" max="7" value="4" class="w-full accent-[#FEF9FB]">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium mb-2" id="tool-size-label">Recommended Tool Size *</label>
-                            <select id="yarn-hook" class="w-full p-3 rounded-xl" required>
-                                <option value="" selected disabled>Select a tool size</option>
-                                <option value="2.25mm">2.25mm (B-1)</option>
-                                <option value="3.25mm">3.25mm (D-3)</option>
-                                <option value="3.5mm">3.5mm (E-4)</option>
-                                <option value="4.0mm">4.0mm (G-6)</option>
-                                <option value="5.0mm">5.0mm (H-8)</option>
-                                <option value="6.0mm">6.0mm (J-10)</option>
-                                <option value="8.0mm">8.0mm (L-11)</option>
-                                <option value="10.0mm">10.0mm (N/P-15)</option>
-                            </select>
+                            <label class="block text-sm font-medium mb-2">Yarn Color *</label>
+                            <input type="text" id="yarn-color" placeholder="e.g. Teal" class="w-full p-3 rounded-xl" required>
                         </div>
                         <button type="submit" class="btn-primary w-full py-4 rounded-xl font-bold text-lg">Add to Stash</button>
                     </form>
@@ -855,14 +826,13 @@
 
         function buildSearchKeywordVariants(rawQuery) {
             const source = String(rawQuery || '').replace(/\s+/g, ' ').trim();
-            const { hooks, colors, weights, extras } = extractPatternKeywords(source);
+            const { colors, weights, extras } = extractPatternKeywords(source);
             const intent = parseSearchIntent(source);
             const craftKeyword = intent.crafts[0] || 'crochet';
             const variants = [];
 
             variants.push(`${craftKeyword} free pattern`);
-            hooks.forEach(hook => variants.push(`${hook} ${craftKeyword} pattern`));
-            colors.forEach(color => variants.push(`${color} ${craftKeyword} pattern`));
+            colors.forEach(color => variants.push(`${color} ${craftKeyword} free pattern`));
             weights.forEach(weight => variants.push(`${weight} yarn ${craftKeyword} pattern`));
 
             if (extras.length) {
@@ -918,11 +888,8 @@
             intent.crafts.forEach(craft => {
                 if (combined.includes(craft)) score += 4;
             });
-            intent.hooks.forEach(hook => {
-                if (combined.includes(hook)) score += 5;
-            });
             intent.colors.forEach(color => {
-                if (combined.includes(color)) score += 3;
+                if (combined.includes(color)) score += 5;
             });
             intent.weights.forEach(weight => {
                 if (combined.includes(weight)) score += 3;
@@ -939,11 +906,8 @@
             if (intent.explicitCraft && !intent.crafts.some(craft => combined.includes(craft))) {
                 score -= 5;
             }
-            if (intent.hooks.length && !intent.hooks.some(hook => combined.includes(hook))) {
-                score -= 4;
-            }
             if (intent.colors.length && !intent.colors.some(color => combined.includes(color))) {
-                score -= 3;
+                score -= 6;
             }
             if (intent.weights.length && !intent.weights.some(weight => combined.includes(weight))) {
                 score -= 3;
@@ -1455,17 +1419,41 @@
             return uniqueTokens.join(' ');
         }
 
+        function formatGoalLabel(goalValue) {
+            const goal = String(goalValue || '').toLowerCase();
+            const labels = {
+                amigurumi: 'Amigurumi / Plushies',
+                clothing: 'Clothing',
+                accessories: 'Accessories',
+                'home-decor': 'Home Decor',
+                baby: 'Baby Items',
+                gifts: 'Small Gifts'
+            };
+            return labels[goal] || 'Crochet project';
+        }
+
+        function getGoalSearchTerms(goalValue) {
+            const goal = String(goalValue || '').toLowerCase();
+            const terms = {
+                amigurumi: 'amigurumi plushie toy',
+                clothing: 'sweater cardigan top clothing',
+                accessories: 'hat scarf mitts bag accessories',
+                'home-decor': 'blanket basket coaster rug home decor',
+                baby: 'baby blanket baby hat',
+                gifts: 'quick gift coaster scarf'
+            };
+            return terms[goal] || '';
+        }
+
         function buildYarnQuery(yarn) {
             const craft = normalizeCraft(yarn.craft);
             const craftLabel = getCraftLabel(craft).toLowerCase();
-            const toolLabel = getToolLabel(craft).toLowerCase();
+            const goalTerms = getGoalSearchTerms(yarn.goal);
             const baseQuery = [
-                yarn.brand,
                 yarn.color,
                 craftLabel,
-                yarn.weight !== null && yarn.weight !== undefined ? `${weightLabels[yarn.weight]}` : '',
-                yarn.hook ? `${normalizeHookSize(yarn.hook)} ${toolLabel}` : '',
-                yarn.yardage ? `${yarn.yardage} yards` : '',
+                goalTerms,
+                'free pattern',
                 `${craftLabel} pattern`
             ].filter(Boolean).join(' ');
 
@@ -3528,14 +3516,26 @@
 
             const yarn = yarnStash[idx];
             const yarnCraft = normalizeCraft(yarn.craft);
+            const goal = String(yarn.goal || '').toLowerCase();
+            const goalKeywords = {
+                amigurumi: ['amigurumi', 'plushie', 'toy', 'octopus', 'dino'],
+                clothing: ['sweater', 'cardigan', 'clothing', 'top', 'shawl'],
+                accessories: ['scarf', 'hat', 'mitt', 'bag', 'beanie'],
+                'home-decor': ['blanket', 'basket', 'coaster', 'rug', 'home'],
+                baby: ['baby', 'blanket', 'cardigan', 'hat'],
+                gifts: ['coaster', 'scarf', 'amigurumi', 'gift']
+            };
+            const activeGoalKeywords = goalKeywords[goal] || [];
             const compatible = curatedPatterns.filter(r => (
                 normalizeCraft(r.craft) === yarnCraft &&
-                (yarn.weight === null || yarn.weight === undefined || r.weight === yarn.weight) &&
-                (yarn.yardage === null || yarn.yardage === undefined || r.yardage <= yarn.yardage)
+                (!activeGoalKeywords.length || activeGoalKeywords.some(keyword => {
+                    const haystack = `${r.name} ${(r.steps || []).join(' ')}`.toLowerCase();
+                    return haystack.includes(keyword);
+                }))
             ));
 
             if (compatible.length === 0) {
-                results.innerHTML = '<div class="col-span-full text-center py-10 glass">No patterns match this yardage/weight yet.</div>';
+                results.innerHTML = '<div class="col-span-full text-center py-10 glass">No built-in patterns match this crochet goal yet.</div>';
                 noMatches.classList.add('hidden-section');
             } else {
                 noMatches.classList.add('hidden-section');
@@ -3548,12 +3548,9 @@
                                 <h3 class="font-bold text-lg">${proj.name}</h3>
                                 <p class="text-xs text-gray-400">Built-in ${getCraftLabel(proj.craft || 'crochet')} Recipe</p>
                             </div>
-                            <span class="text-xs bg-white/10 px-2 py-1 rounded">${proj.hook} ${getToolLabel(proj.craft || 'crochet')}</span>
+                            <span class="text-xs bg-white/10 px-2 py-1 rounded">Goal: ${formatGoalLabel(yarn.goal)}</span>
                         </div>
-                        <div class="text-sm text-gray-400 mb-6 space-y-1">
-                            <p>Requires: ${proj.yardage} yds</p>
-                            <p>Available: <span class="text-green-400">${yarn.yardage ? `${yarn.yardage} yds` : 'yardage not provided'}</span></p>
-                        </div>
+                        <div class="text-sm text-gray-400 mb-6">Color: <span class="text-green-400">${yarn.color}</span></div>
                         <button onclick="viewPattern('${proj.id}', ${idx})" class="mt-auto btn-primary py-2 rounded-lg text-sm font-semibold">Start Project</button>
                     `;
                     results.appendChild(card);
@@ -3572,7 +3569,7 @@
                         <p class="text-xs text-gray-400">Unified ${getCraftLabel(yarnCraft).toLowerCase()} pattern results from across the fiber universe</p>
                     </div>
                 </div>
-                <p class="text-sm text-gray-300 mb-4">Searching for ${getCraftLabel(yarnCraft).toLowerCase()} patterns matching <span class="font-semibold">${yarn.brand || 'your material'}</span> in <span class="font-semibold">${yarn.color}</span>${yarn.weight !== null && yarn.weight !== undefined ? ` (Weight ${yarn.weight})` : ''}</p>
+                <p class="text-sm text-gray-300 mb-4">Searching for <span class="font-semibold">${formatGoalLabel(yarn.goal)}</span> patterns in <span class="font-semibold">${yarn.color}</span> yarn.</p>
                 <p class="text-xs text-gray-400 mt-3">Query: ${yarnQuery}</p>
                 <div id="yarniverse-results-${idx}" class="mt-4 space-y-3">Loading pattern results...</div>
             `;
@@ -3659,7 +3656,7 @@
 
         async function findPatternsForYarn(index) {
             const yarn = yarnStash[index];
-            const searchDesc = `Searching for ${getCraftLabel(yarn.craft).toLowerCase()} patterns for: <strong>${yarn.brand || 'material'}</strong> — ${yarn.color} (Weight ${yarn.weight ?? 'n/a'})`;
+            const searchDesc = `Searching for <strong>${formatGoalLabel(yarn.goal)}</strong> in ${yarn.color} yarn.`;
             document.getElementById('pattern-search-desc').innerHTML = searchDesc;
 
             const patternLinks = document.getElementById('pattern-links');
