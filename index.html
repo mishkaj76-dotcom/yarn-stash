@@ -164,7 +164,7 @@
                     <div class="glass rounded-2xl p-5 md:p-6 w-full md:max-w-sm">
                         <h2 class="text-xl font-semibold text-[#2f211d] mb-3">What you can do</h2>
                         <ul class="space-y-2 text-sm text-[#5f483c]">
-                            <li>Save yarn details: color, yardage, weight, and tool size.</li>
+                            <li>Save your yarn color and crochet goal in one quick step.</li>
                             <li>See project matches for each stash item.</li>
                             <li>Search trusted pattern sources online.</li>
                             <li>Join community posts and challenge forums.</li>
@@ -2708,13 +2708,13 @@
             empty.classList.add('hidden-section');
             yarnStash.forEach((yarn, index) => {
                 const craft = normalizeCraft(yarn.craft);
-                const toolLabel = getToolLabel(craft);
+                const goalLabel = formatGoalLabel(yarn.goal);
                 const card = document.createElement('div');
                 card.className = 'glass p-6 yarn-card relative overflow-hidden animate-fade';
                 card.innerHTML = `
                     <div class="flex justify-between items-start mb-4">
-                        <div class="w-10 h-10 rounded-full weight-badge flex items-center justify-center font-bold text-lg">
-                            ${yarn.weight ?? '—'}
+                        <div class="text-xs font-semibold px-3 py-1 rounded-full border border-[#EA85C7]/40 text-[#A03A81] bg-white/40">
+                            ${escapeHtml(goalLabel)}
                         </div>
                         <button onclick="deleteYarn(${index})" class="text-gray-500 hover:text-red-400 transition-colors" aria-label="Delete yarn">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -2722,11 +2722,10 @@
                             </svg>
                         </button>
                     </div>
-                    <h3 class="text-xl font-bold mb-1">${yarn.brand || 'Untitled material'}</h3>
-                    <p class="text-sm text-gray-400 mb-4">${yarn.color}${yarn.yardage ? ` • ${yarn.yardage} yds` : ''}</p>
+                    <h3 class="text-xl font-bold mb-1">${escapeHtml(yarn.color || 'Yarn color not set')}</h3>
+                    <p class="text-sm text-gray-400 mb-4">Goal: ${escapeHtml(goalLabel)}</p>
                     <div class="text-xs text-[#6d5142] space-y-1">
                         <p>Craft: <span class="font-semibold">${getCraftLabel(craft)}</span></p>
-                        <p>${toolLabel}: <span class="font-semibold">${escapeHtml(yarn.hook || 'Not set')}</span></p>
                     </div>
                     <div class="flex justify-between items-center mt-6">
                         <button onclick="toggleStatus(${index})" class="text-xs font-semibold px-3 py-1 rounded-full border ${yarn.status === 'Available' ? 'border-green-400 text-green-400' : 'border-yellow-400 text-yellow-400'}">
@@ -3430,9 +3429,13 @@
             document.getElementById('log-form').reset();
             renderStash();
             
-            // Automatically show pattern finder for the new yarn
+            // Automatically open match results for the newly logged yarn.
             setTimeout(() => {
-                findPatternsForYarn(yarnStash.length - 1);
+                switchTab('match');
+                updateMatchDropdown();
+                const latestIndex = yarnStash.length - 1;
+                document.getElementById('match-yarn-dropdown').value = String(latestIndex);
+                filterProjects();
             }, 500);
         });
 
