@@ -1587,21 +1587,16 @@
                 .replace(/["']/g, ' ')
                 .replace(/\s+/g, ' ')
                 .trim() || 'crochet pattern';
-            const encodedQuery = encodeURIComponent(searchQuery);
-
-            if (host.endsWith('blogspot.com') || host.endsWith('typepad.com')) {
-                return `https://${host}/search?q=${encodedQuery}`;
-            }
-
-            return `https://www.${host}/?s=${encodedQuery}`;
+            const siteScopedQuery = `site:${host} ${searchQuery} pattern`;
+            return `https://duckduckgo.com/?q=${encodeURIComponent(siteScopedQuery)}`;
         }
 
         function buildTrustedSourceResults(query) {
             const hosts = getTrustedSourceHosts();
             return hosts.map(host => {
                 return {
-                    title: `Search ${host}`,
-                    site: 'Trusted source',
+                    title: `Find patterns on ${host}`,
+                    site: 'Trusted source search',
                     host,
                     url: buildSourceSearchUrl(host, query)
                 };
